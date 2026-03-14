@@ -357,10 +357,11 @@ class LLMRouter:
     """
     Provider order:
       1) Groq (if GROQ_API_KEY set)                  <-- primary (fast, free tier)
-      2) LitServe (server.py, port 8000)              <-- local primary
-      3) Qwen local via transformers                  <-- local fallback
-      4) OpenAI (if OPENAI_API_KEY set)
-      5) Ollama (if OLLAMA_MODEL set)
+      2) Lightning AI (if LIGHTNING_API_KEY set)      <-- fallback on Groq rate limit
+      3) LitServe (server.py, port 8000)              <-- local primary
+      4) Qwen local via transformers                  <-- local fallback
+      5) OpenAI (if OPENAI_API_KEY set)
+      6) Ollama (if OLLAMA_MODEL set)
 
     Returns: (json, provider_name, trace[])
     """
@@ -380,7 +381,19 @@ class LLMRouter:
                 )
             )
 
-        # 2. LitServe (local Qwen via server.py on port 8000)
+        # 2. Lightning AI (fallback when Groq hits rate limit)
+        lightning_key = (os.getenv("LIGHTNING_API_KEY") or "").strip()
+        if lightning_key:
+            self.providers.append(
+                LLMHTTP(
+                    api_key=lightning_key,
+                    base_url=(os.getenv("LIGHTNING_BASE_URL") or "https://api.lightning.ai/v1/chat/completions").strip(),
+                    model=(os.getenv("LIGHTNING_MODEL") or "lightning-ai/llama-3.3-70b").strip(),
+                    name="lightning",
+                )
+            )
+
+        # 3. LitServe (local Qwen via server.py on port 8000)
         litserve_url = (os.getenv("LITSERVE_URL") or "http://127.0.0.1:8000").strip()
         self.providers.append(LitServeClient(base_url=litserve_url, name="litserve"))
 

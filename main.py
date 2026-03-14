@@ -159,6 +159,7 @@ async def health():
         "rag_enabled": True,
         "env": {
             "GROQ_API_KEY": _safe_bool_env("GROQ_API_KEY"),
+            "LIGHTNING_API_KEY": _safe_bool_env("LIGHTNING_API_KEY"),
             "OPENAI_API_KEY": _safe_bool_env("OPENAI_API_KEY"),
             "OLLAMA_BASE_URL": (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").strip(),
             "OLLAMA_MODEL": (os.getenv("OLLAMA_MODEL") or "").strip(),
