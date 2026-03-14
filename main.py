@@ -148,7 +148,7 @@ async def index():
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/index.html")
+    return FileResponse("static/index.html")
 
 @app.get("/health")
 async def health():
