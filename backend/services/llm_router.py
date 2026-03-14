@@ -356,10 +356,11 @@ class LitServeClient:
 class LLMRouter:
     """
     Provider order:
-      1) LitServe (server.py, port 8000)              <-- primary (Lightning AI)
-      2) Qwen local via transformers                  <-- fallback if server not running
-      3) OpenAI (if OPENAI_API_KEY set)
-      4) Ollama (if OLLAMA_MODEL set)
+      1) Groq (if GROQ_API_KEY set)                  <-- primary (fast, free tier)
+      2) LitServe (server.py, port 8000)              <-- local primary
+      3) Qwen local via transformers                  <-- local fallback
+      4) OpenAI (if OPENAI_API_KEY set)
+      5) Ollama (if OLLAMA_MODEL set)
 
     Returns: (json, provider_name, trace[])
     """
@@ -367,15 +368,27 @@ class LLMRouter:
     def __init__(self):
         self.providers: List[Any] = []
 
-        # 1. LitServe (primary on Lightning AI)
+        # 1. Groq (primary — fast, free tier, reliable JSON)
+        groq_key = (os.getenv("GROQ_API_KEY") or "").strip()
+        if groq_key:
+            self.providers.append(
+                LLMHTTP(
+                    api_key=groq_key,
+                    base_url="https://api.groq.com/openai/v1/chat/completions",
+                    model=(os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile").strip(),
+                    name="groq",
+                )
+            )
+
+        # 2. LitServe (local Qwen via server.py on port 8000)
         litserve_url = (os.getenv("LITSERVE_URL") or "http://127.0.0.1:8000").strip()
         self.providers.append(LitServeClient(base_url=litserve_url, name="litserve"))
 
-        # 2. Qwen local via transformers (fallback if server.py not running)
+        # 3. Qwen local via transformers (fallback if server.py not running)
         qwen_model = (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip()
         self.providers.append(QwenLocal(model_id=qwen_model, name="qwen"))
 
-        # 2. OpenAI (optional fallback)
+        # 4. OpenAI (optional fallback)
         openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
         if openai_key:
             self.providers.append(
@@ -387,7 +400,7 @@ class LLMRouter:
                 )
             )
 
-        # 3. Ollama (optional fallback)
+        # 5. Ollama (optional fallback)
         ollama_url = (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").strip()
         ollama_model = (os.getenv("OLLAMA_MODEL") or "").strip()
         if ollama_model:
