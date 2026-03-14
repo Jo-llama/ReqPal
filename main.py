@@ -1,4 +1,4 @@
-# main.py — ReqPal RAG MVP (SQLite backend + full CRUD)
+# main.py — ReqPal (SQLite backend + full CRUD)
 # - Projects CRUD (+ delete cascade)
 # - Documents upload/list/get/delete (Chroma cleanup)
 # - /rag/search (chunks)
@@ -158,10 +158,10 @@ async def health():
         "version": app.version,
         "rag_enabled": True,
         "env": {
-            "GROQ_API_KEY": _safe_bool_env("GROQ_API_KEY"),
             "OPENAI_API_KEY": _safe_bool_env("OPENAI_API_KEY"),
             "OLLAMA_BASE_URL": (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").strip(),
             "OLLAMA_MODEL": (os.getenv("OLLAMA_MODEL") or "").strip(),
+            "QWEN_MODEL": (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip(),
         },
         "router": (r.providers_status() if r else {"configured": [], "models": {}}),
     }
@@ -174,10 +174,10 @@ async def providers_status():
             "ok": False,
             "error": "No LLM providers configured or router init failed.",
             "env": {
-                "GROQ_API_KEY": _safe_bool_env("GROQ_API_KEY"),
                 "OPENAI_API_KEY": _safe_bool_env("OPENAI_API_KEY"),
                 "OLLAMA_BASE_URL": (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").strip(),
                 "OLLAMA_MODEL": (os.getenv("OLLAMA_MODEL") or "").strip(),
+                "QWEN_MODEL": (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip(),
             },
         }
     return {"ok": True, "router": r.providers_status()}
