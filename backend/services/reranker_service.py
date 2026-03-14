@@ -25,9 +25,19 @@ class RerankerService:
     """
 
     def __init__(self, model_name: str = "BAAI/bge-reranker-base"):
-        # lighter and Faster: "cross-encoder/ms-marco-MiniLM-L-6-v2"
         self.model_name = model_name
-        self.model = CrossEncoder(model_name, device="cpu")
+        self._model: Optional[CrossEncoder] = None
+
+    def _load(self):
+        if self._model is None:
+            print(f"[RerankerService] Loading {self.model_name}...")
+            self._model = CrossEncoder(self.model_name, device="cpu")
+            print(f"[RerankerService] {self.model_name} ready.")
+
+    @property
+    def model(self) -> CrossEncoder:
+        self._load()
+        return self._model  # type: ignore
 
     def rerank(
         self,
