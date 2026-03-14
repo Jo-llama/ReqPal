@@ -41,7 +41,7 @@ class RAGService:
 
     def __init__(self):
         print("[INFO] Loading embedding model...")
-        self.embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        self.embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5", device="cpu")
         print("[OK] Embedding model loaded")
 
         chroma_path = Path("storage/chroma")
