@@ -387,7 +387,7 @@ class LLMRouter:
             self.providers.append(
                 LLMHTTP(
                     api_key=lightning_key,
-                    base_url=(os.getenv("LIGHTNING_BASE_URL") or "https://api.lightning.ai/v1/chat/completions").strip(),
+                    base_url=(os.getenv("LIGHTNING_BASE_URL") or "https://lightning.ai/api/v1/chat/completions").strip(),
                     model=(os.getenv("LIGHTNING_MODEL") or "lightning-ai/llama-3.3-70b").strip(),
                     name="lightning",
                 )
