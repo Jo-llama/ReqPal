@@ -726,7 +726,7 @@
 
     async function apiHealth(){
       try{
-        const r = await fetch("/");
+        const r = await fetch("/health");
         const ok = r.ok;
         const status = document.getElementById("api-status");
         status.textContent = ok ? "API: ok" : "API: error";

@@ -18,7 +18,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, RedirectResponse
 
 from pydantic import BaseModel
 from typing import List as TList
@@ -148,9 +148,13 @@ async def index():
 
 @app.get("/")
 async def root():
+    return RedirectResponse(url="/static/index.html")
+
+@app.get("/health")
+async def health():
     r = get_router()
     return {
-        "status": "ReqPal RAG MVP is running",
+        "status": "ReqPal is running",
         "version": app.version,
         "rag_enabled": True,
         "env": {
