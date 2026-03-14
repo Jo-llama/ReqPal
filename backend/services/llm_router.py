@@ -296,12 +296,69 @@ class QwenLocal:
         )
 
 
+class LitServeClient:
+    """
+    Calls the Qwen LitServe server (server.py) running on localhost:8000.
+    Set LITSERVE_URL env var to override (default: http://127.0.0.1:8000).
+    Primary provider — falls back to QwenLocal if server is not reachable.
+    """
+
+    def __init__(self, base_url: str, name: str = "litserve"):
+        self.base_url = base_url.rstrip("/")
+        self.name = name
+        self.model = "qwen-litserve"
+
+    def _extract_json(self, text: str) -> Dict[str, Any]:
+        text = text.strip()
+        if "```json" in text:
+            text = text.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif "```" in text:
+            text = text.split("```", 1)[1].split("```", 1)[0].strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+        for pattern in (r"\{[\s\S]*\}", r"\[[\s\S]*\]"):
+            m = re.search(pattern, text)
+            if m:
+                try:
+                    return json.loads(m.group())
+                except json.JSONDecodeError:
+                    pass
+        return {"raw": text}
+
+    async def chat_json(
+        self,
+        system: str,
+        user_payload: Dict[str, Any],
+        temperature: float = 0.1,
+        max_tokens: int = 800,
+        timeout_s: float = 120.0,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        payload = {
+            "input": {
+                "system": system + "\n\nIMPORTANT: Respond with valid JSON only. No markdown, no extra text.",
+                "user_payload": user_payload,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        }
+        async with httpx.AsyncClient(timeout=timeout_s) as client:
+            r = await client.post(f"{self.base_url}/predict", json=payload)
+            r.raise_for_status()
+            data = r.json()
+            text = data.get("output", {}).get("text") or data.get("text") or ""
+            return self._extract_json(text)
+
+
 class LLMRouter:
     """
     Provider order:
-      1) Qwen (local, via HuggingFace transformers)  <-- primary
-      2) OpenAI (if OPENAI_API_KEY set)               <-- fallback
-      3) Ollama (if OLLAMA_MODEL set)                 <-- last resort
+      1) LitServe (server.py, port 8000)              <-- primary (Lightning AI)
+      2) Qwen local via transformers                  <-- fallback if server not running
+      3) OpenAI (if OPENAI_API_KEY set)
+      4) Ollama (if OLLAMA_MODEL set)
 
     Returns: (json, provider_name, trace[])
     """
@@ -309,7 +366,11 @@ class LLMRouter:
     def __init__(self):
         self.providers: List[Any] = []
 
-        # 1. Qwen local (primary)
+        # 1. LitServe (primary on Lightning AI)
+        litserve_url = (os.getenv("LITSERVE_URL") or "http://127.0.0.1:8000").strip()
+        self.providers.append(LitServeClient(base_url=litserve_url, name="litserve"))
+
+        # 2. Qwen local via transformers (fallback if server.py not running)
         qwen_model = (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip()
         self.providers.append(QwenLocal(model_id=qwen_model, name="qwen"))
 

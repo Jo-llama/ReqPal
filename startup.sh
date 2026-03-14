@@ -4,13 +4,24 @@ set -e
 
 echo "=== ReqPal startup ==="
 
+# Upgrade pip + setuptools first — required for Python 3.12 compatibility
+pip install --upgrade pip setuptools wheel
+
 # Install dependencies
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt
 
 # Create storage dirs if needed
 mkdir -p storage uploads
 
-# Pre-cache Qwen model (optional, speeds up first request)
-# The model also loads automatically on first API call
-echo "=== Starting ReqPal server ==="
+# Start Qwen LitServe server in background (port 8000)
+echo "=== Starting Qwen LitServe server (port 8000) ==="
+python server.py &
+LITSERVE_PID=$!
+echo "LitServe PID: $LITSERVE_PID"
+
+# Give LitServe a moment to bind the port before FastAPI starts
+sleep 3
+
+# Start ReqPal FastAPI app (port 8001)
+echo "=== Starting ReqPal FastAPI app (port 8001) ==="
 uvicorn main:app --host 0.0.0.0 --port 8001 --workers 1
