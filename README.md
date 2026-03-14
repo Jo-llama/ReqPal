@@ -48,8 +48,6 @@ Documents → RAG → Stakeholder Chat → Requirements → AI User Stories → 
 | 2 | **Lightning AI** | `LIGHTNING_API_KEY` — fallback on Groq rate limit |
 | 3 | **LitServe** (local Qwen) | `LITSERVE_ENABLED=1` — opt-in, requires GPU |
 | 4 | **Qwen local** (transformers) | `QWEN_LOCAL_ENABLED=1` — opt-in, requires GPU |
-| 5 | **OpenAI** | `OPENAI_API_KEY` — optional |
-| 6 | **Ollama** | `OLLAMA_MODEL` — optional |
 
 The app works **without a GPU** when Groq or another cloud provider is configured.
 
