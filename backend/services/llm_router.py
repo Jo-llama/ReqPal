@@ -393,13 +393,15 @@ class LLMRouter:
                 )
             )
 
-        # 3. LitServe (local Qwen via server.py on port 8000)
-        litserve_url = (os.getenv("LITSERVE_URL") or "http://127.0.0.1:8000").strip()
-        self.providers.append(LitServeClient(base_url=litserve_url, name="litserve"))
+        # 3. LitServe (local Qwen via server.py on port 8000) — only if enabled
+        if os.getenv("LITSERVE_ENABLED", "").strip() == "1":
+            litserve_url = (os.getenv("LITSERVE_URL") or "http://127.0.0.1:8000").strip()
+            self.providers.append(LitServeClient(base_url=litserve_url, name="litserve"))
 
-        # 3. Qwen local via transformers (fallback if server.py not running)
-        qwen_model = (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip()
-        self.providers.append(QwenLocal(model_id=qwen_model, name="qwen"))
+        # 4. Qwen local via transformers — only if explicitly enabled (requires GPU + accelerate)
+        if os.getenv("QWEN_LOCAL_ENABLED", "").strip() == "1":
+            qwen_model = (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip()
+            self.providers.append(QwenLocal(model_id=qwen_model, name="qwen"))
 
         # 4. OpenAI (optional fallback)
         openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
