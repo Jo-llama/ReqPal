@@ -333,6 +333,60 @@
     .tab-btn + .tab-btn{border-left:1px solid var(--border)}
     .tab-pane{display:none;flex-direction:column;gap:16px}
     .tab-pane.active{display:flex}
+
+    /* ── Mobile: tablet ────────────────────── */
+    @media(max-width:768px){
+      .topbar-inner{ min-height:68px; padding:0 14px; }
+      .brand-logo-wrap img{ height:46px; }
+      .brand-name{ font-size:17px; }
+      .layout{ padding:12px 12px 28px; gap:12px; }
+      .panel-body{ padding:12px; }
+      .split{ grid-template-columns:1fr; }
+    }
+
+    /* ── Mobile: phone ─────────────────────── */
+    @media(max-width:480px){
+      /* Topbar */
+      .topbar-inner{ min-height:60px; padding:0 12px; gap:8px; }
+      .brand{ gap:9px; }
+      .brand-logo-wrap img{ height:38px; }
+      .brand-name{ font-size:15px; }
+      .brand-tagline{ font-size:11px; white-space:normal; }
+      .topbar-divider{ display:none; }
+      .topbar-actions{ gap:6px; }
+      .badge{ font-size:11px; padding:3px 8px; }
+
+      /* Layout */
+      .layout{ padding:10px 10px 24px; gap:10px; }
+      .panel-body{ padding:10px; }
+      .panel-header{ padding:10px 10px 8px; }
+      .split{ grid-template-columns:1fr; }
+      .row{ flex-wrap:wrap; }
+
+      /* Tabs: scrollable horizontal row */
+      .tab-nav{ border-radius:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      .tab-btn{ flex:0 0 auto; padding:11px 12px; font-size:12px; white-space:normal; min-width:0; }
+      .tab-btn .badge{ font-size:10px; padding:2px 6px; }
+
+      /* Buttons */
+      .btn{ padding:9px 10px; font-size:13px; }
+      .btn-small{ padding:7px 9px; font-size:12px; }
+
+      /* Inputs / selects */
+      input, textarea, select{ font-size:16px; } /* prevent iOS zoom */
+      select[style*="min-width"]{ min-width:0 !important; width:100%; }
+
+      /* Result code blocks */
+      .code{ font-size:11px; padding:8px; }
+
+      /* Score badges */
+      .score{ font-size:11px; padding:4px 8px; }
+
+      /* Modals */
+      .modal{ border-radius:12px; }
+      .modal-body{ padding:10px; }
+      .modal-footer{ padding:10px; gap:8px; }
+    }
   </style>
 </head>
 
@@ -489,7 +543,7 @@
           <div class="panel-header">
             <h2>Documents</h2>
             <div class="row">
-              <select id="doc-class" style="min-width:200px">
+              <select id="doc-class" style="min-width:min(200px,100%)">
                 <option value="regulation">regulation</option>
                 <option value="legal">legal</option>
                 <option value="audit">audit</option>
@@ -609,7 +663,7 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
               <div>
                 <label>Group by</label>
-                <select id="story-group-by" onchange="renderUserStoriesGrouped()" style="min-width:140px">
+                <select id="story-group-by" onchange="renderUserStoriesGrouped()" style="min-width:min(140px,100%)">
                   <option value="priority">Priority (MoSCoW)</option>
                   <option value="category">Category</option>
                   <option value="status">Status</option>
@@ -618,7 +672,7 @@
               </div>
               <div>
                 <label>Filter status</label>
-                <select id="story-filter-status" onchange="renderUserStoriesGrouped()" style="min-width:140px">
+                <select id="story-filter-status" onchange="renderUserStoriesGrouped()" style="min-width:min(140px,100%)">
                   <option value="all">All</option>
                   <option value="pending_review">Pending Review</option>
                   <option value="accepted">Accepted</option>
@@ -629,7 +683,7 @@
               </div>
               <div>
                 <label>Filter priority</label>
-                <select id="story-filter-priority" onchange="renderUserStoriesGrouped()" style="min-width:140px">
+                <select id="story-filter-priority" onchange="renderUserStoriesGrouped()" style="min-width:min(140px,100%)">
                   <option value="all">All</option>
                   <option value="Must Have">Must Have</option>
                   <option value="Should Have">Should Have</option>

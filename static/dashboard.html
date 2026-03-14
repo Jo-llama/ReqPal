@@ -214,6 +214,48 @@
 
     /* Panel enter animation */
     .panel{animation:fadeUp .3s ease}
+
+    /* ── Mobile: tablet ────────────────────── */
+    @media(max-width:768px){
+      .topbar-inner{ min-height:68px; padding:0 14px; }
+      .brand-logo-wrap img{ height:46px; }
+      .brand-name{ font-size:17px; }
+      .container{ padding:12px 12px 28px; gap:12px; }
+      .split{ grid-template-columns:1fr; }
+      .panel-body{ padding:12px; }
+    }
+
+    /* ── Mobile: phone ─────────────────────── */
+    @media(max-width:480px){
+      /* Topbar */
+      .topbar-inner{ min-height:60px; padding:0 12px; gap:8px; }
+      .brand{ gap:9px; }
+      .brand-logo-wrap img{ height:38px; }
+      .brand-name{ font-size:15px; }
+      .brand-tagline{ font-size:11px; white-space:normal; }
+      .topbar-divider{ display:none; }
+      .topbar-actions{ gap:6px; flex-wrap:wrap; }
+      .badge{ font-size:11px; padding:3px 8px; }
+
+      /* Layout */
+      .container{ padding:10px 10px 24px; gap:10px; }
+      .panel-body{ padding:10px; }
+      .panel-header{ padding:10px 10px 8px; }
+      .split{ grid-template-columns:1fr; }
+      .row{ flex-wrap:wrap; }
+
+      /* Chat */
+      .chat-area{ height:260px; }
+      .chat-msg{ max-width:90%; font-size:13px; }
+      .chat-input-row{ gap:6px; }
+
+      /* Buttons */
+      .btn{ padding:9px 10px; font-size:13px; }
+      .btn-small{ padding:7px 9px; font-size:12px; }
+
+      /* Inputs / selects — prevent iOS zoom */
+      input, textarea, select{ font-size:16px; }
+    }
   </style>
 </head>
 
