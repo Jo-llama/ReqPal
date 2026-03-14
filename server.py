@@ -1,49 +1,56 @@
 import os
 import json
 import litserve as ls
-from litgpt import LLM
+from transformers import pipeline
 
 QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen2.5-7B-Instruct")
-
-# Qwen chat template tokens
-_SYS_OPEN  = "<|im_start|>system\n"
-_SYS_CLOSE = "<|im_end|>\n"
-_USR_OPEN  = "<|im_start|>user\n"
-_USR_CLOSE = "<|im_end|>\n"
-_ASS_OPEN  = "<|im_start|>assistant\n"
-
-
-def _build_prompt(system: str, user: str) -> str:
-    return f"{_SYS_OPEN}{system}{_SYS_CLOSE}{_USR_OPEN}{user}{_USR_CLOSE}{_ASS_OPEN}"
 
 
 class QwenAPI(ls.LitAPI):
     def setup(self, device):
         print(f"[QwenAPI] Loading {QWEN_MODEL} …")
-        self.llm = LLM.load(QWEN_MODEL)
+        self._pipe = pipeline(
+            "text-generation",
+            model=QWEN_MODEL,
+            torch_dtype="auto",
+            device_map="auto",
+        )
         print(f"[QwenAPI] {QWEN_MODEL} ready.")
 
     def decode_request(self, request):
-        # request: {system, user_payload, temperature, max_tokens}
         return {
-            "prompt": _build_prompt(
-                system=request.get("system", ""),
-                user=json.dumps(request.get("user_payload", {}), ensure_ascii=False),
-            ),
+            "messages": [
+                {
+                    "role": "system",
+                    "content": request.get("system", "")
+                    + "\n\nIMPORTANT: Respond with valid JSON only. No markdown, no extra text.",
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        request.get("user_payload", {}), ensure_ascii=False
+                    ),
+                },
+            ],
             "temperature": float(request.get("temperature", 0.1)),
-            "max_tokens":  int(request.get("max_tokens", 800)),
+            "max_tokens": int(request.get("max_tokens", 800)),
         }
 
     def predict(self, data):
-        return self.llm.generate(
-            data["prompt"],
+        outputs = self._pipe(
+            data["messages"],
             max_new_tokens=data["max_tokens"],
             temperature=max(data["temperature"], 0.01),
-            top_k=50,
+            do_sample=data["temperature"] > 0.01,
+            return_full_text=False,
         )
+        raw = outputs[0]["generated_text"]
+        if isinstance(raw, list):
+            raw = raw[-1].get("content", "")
+        return {"text": str(raw)}
 
     def encode_response(self, output):
-        return {"text": output}
+        return output
 
 
 if __name__ == "__main__":

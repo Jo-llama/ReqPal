@@ -14,7 +14,6 @@ numpy>=1.26.4
 torch>=2.2.0
 
 # Local LLM - Qwen via LitServe + transformers
-litgpt
 litserve
 transformers>=4.45.0
 accelerate>=0.27.0
