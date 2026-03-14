@@ -1,7 +1,7 @@
 import os
 import json
 import litserve as ls
-from transformers import pipeline
+from transformers import pipeline, GenerationConfig
 
 QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen2.5-7B-Instruct")
 
@@ -37,11 +37,14 @@ class QwenAPI(ls.LitAPI):
         }
 
     def predict(self, data):
-        outputs = self._pipe(
-            data["messages"],
+        gen_cfg = GenerationConfig(
             max_new_tokens=data["max_tokens"],
             temperature=max(data["temperature"], 0.01),
             do_sample=data["temperature"] > 0.01,
+        )
+        outputs = self._pipe(
+            data["messages"],
+            generation_config=gen_cfg,
             return_full_text=False,
         )
         raw = outputs[0]["generated_text"]
