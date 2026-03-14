@@ -178,8 +178,8 @@
       border:1px solid var(--border); border-radius:14px;
       padding:14px;background:#fff;overflow:hidden;max-width:100%;
     }
-    .result-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;align-items:flex-start}
-    .r-title{margin:0;font-weight:900;font-size:14px}
+    .result-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;align-items:flex-start;flex-wrap:wrap;}
+    .r-title{margin:0;font-weight:900;font-size:14px;min-width:0;word-break:break-word;}
     .r-meta{margin:3px 0 0;font-size:12px;color:var(--muted)}
     .code{
       font-family:var(--mono); font-size:12px;
@@ -315,6 +315,24 @@
 
     /* topbar::after defined in .topbar block above */
 
+    /* Ask tab controls */
+    .ask-controls{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+      gap:10px;
+      align-items:end;
+    }
+
+    /* Documents panel header */
+    .docs-header{ flex-wrap:wrap; gap:8px; }
+    .docs-header-controls{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .docs-header-controls select{ min-width:0; flex:1 1 140px; }
+
+    /* Dropzone stack on narrow */
+    .dropzone{ flex-wrap:wrap; gap:10px; }
+
     /* Tabs */
     .tab-nav{
       background:var(--card);border:1px solid var(--border);
@@ -343,6 +361,7 @@
       .layout{ padding:12px 12px 28px; gap:12px; }
       .panel-body{ padding:12px; }
       .split{ grid-template-columns:1fr; }
+      .ask-controls{ grid-template-columns:1fr 1fr; }
     }
 
     /* ── Mobile: phone ─────────────────────── */
@@ -363,6 +382,19 @@
       .panel-header{ padding:10px 10px 8px; }
       .split{ grid-template-columns:1fr; }
       .row{ flex-wrap:wrap; }
+
+      /* Ask tab controls: single column on phone */
+      .ask-controls{ grid-template-columns:1fr; }
+
+      /* Dropzone: stack Browse button below text */
+      .dropzone{ flex-direction:column; align-items:stretch; }
+      .dropzone .row{ width:100%; }
+      .dropzone .row .btn{ flex:1; }
+
+      /* Docs header: stack full-width */
+      .docs-header{ flex-direction:column; align-items:stretch; }
+      .docs-header-controls{ width:100%; }
+      .docs-header-controls select{ flex:1; }
 
       /* Tabs: scrollable horizontal row */
       .tab-nav{ border-radius:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -505,7 +537,7 @@
             <h2>Ask</h2>
           </div>
           <div class="panel-body">
-            <div class="split">
+            <div style="display:flex;flex-direction:column;gap:10px">
               <div>
                 <label>Question</label>
                 <input id="q" placeholder="e.g. What are the data retention requirements for patient records?" />
@@ -514,7 +546,7 @@
                   Hover over "% match" to see how similarity is calculated.
                 </span>
               </div>
-              <div class="split">
+              <div class="ask-controls">
                 <div>
                   <label>Mode</label>
                   <select id="rag-mode">
@@ -541,10 +573,10 @@
 
         <!-- Documents -->
         <div class="panel">
-          <div class="panel-header">
+          <div class="panel-header docs-header">
             <h2>Documents</h2>
-            <div class="row">
-              <select id="doc-class" style="min-width:min(200px,100%)">
+            <div class="docs-header-controls">
+              <select id="doc-class">
                 <option value="regulation">regulation</option>
                 <option value="legal">legal</option>
                 <option value="audit">audit</option>
