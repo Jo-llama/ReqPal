@@ -431,15 +431,15 @@ async def rag_answer(req: RAGAnswerRequest):
 
     if r:
         try:
+            # Limit to top 4 chunks, 800 chars each to stay within 7B model context
+            llm_chunks = selected[:4]
             context_chunks = [
                 {
                     "chunk_id": c.chunk_id,
                     "document_name": c.document_name,
-                    "classification": c.classification or c.category or "unknown",
-                    "source_collection": c.source_collection.value if c.source_collection else None,
-                    "content": (c.content or "")[:2200],
+                    "content": (c.content or "")[:800],
                 }
-                for c in selected
+                for c in llm_chunks
             ]
 
             ans_json, provider, _trace = await r.chat_json(
