@@ -19,8 +19,8 @@ def _build_prompt(system: str, user: str) -> str:
 
 class QwenAPI(ls.LitAPI):
     def setup(self, device):
-        print(f"[QwenAPI] Loading {QWEN_MODEL} on {device} …")
-        self.llm = LLM.load(QWEN_MODEL, accelerator=device)
+        print(f"[QwenAPI] Loading {QWEN_MODEL} …")
+        self.llm = LLM.load(QWEN_MODEL)
         print(f"[QwenAPI] {QWEN_MODEL} ready.")
 
     def decode_request(self, request):
