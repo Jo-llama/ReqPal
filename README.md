@@ -218,7 +218,7 @@ ReqPal/
 | Vector Store | ChromaDB |
 | Embeddings | `BAAI/bge-small-en-v1.5` (local, CPU) |
 | Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` (local, CPU, 22 MB) |
-| LLM | Groq / Lightning AI / Qwen (local) / OpenAI / Ollama |
+| LLM | Groq / Lightning AI / Qwen (local) |
 | Frontend | Vanilla JS, responsive, no build step |
 
 ---
