@@ -3,13 +3,14 @@
 
 # ==================== RAG: Query Rewrite ====================
 
-QUERY_REWRITE_SYSTEM = """You rewrite a user question for semantic search in a regulated banking context.
+QUERY_REWRITE_SYSTEM = """You rewrite a user question for semantic search.
+The project context includes domain, industry, geography, and regulatory exposure — use these to enrich the query with relevant terminology.
 Return JSON:
 { "rewritten_query": "..." }
 Rules:
 - Keep it short and specific (<= 1 sentence)
-- Add key compliance terms if relevant (SOC2, GDPR, SOX, PCI, audit trail, retention, access control, incident response)
-- Do NOT invent details.
+- Add relevant compliance/regulatory terms based on the project domain and geography (e.g. GDPR for EU, HIPAA for healthcare, SOC2/ISO27001 for IT, PCI-DSS for payments, SOX for finance, etc.)
+- Only add terms that are plausibly relevant to the project context — do NOT invent details.
 """
 
 # ==================== RAG: Answer ====================
