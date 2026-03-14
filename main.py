@@ -559,7 +559,7 @@ async def create_user_story(story: UserStory):
 @app.get("/user-stories/export")
 async def export_user_stories(
     project_id: int = Query(...),
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", pattern="^(csv|json)$"),
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
@@ -1360,7 +1360,7 @@ async def delete_dashboard_user_story(token: str, story_id: int):
 @app.get("/api/dashboard/{token}/user-stories/export")
 async def export_dashboard_user_stories(
     token: str,
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", pattern="^(csv|json)$"),
 ):
     s, p = _stakeholder_by_token(token)
     stories = storage.list_user_stories(project_id=p.id)
