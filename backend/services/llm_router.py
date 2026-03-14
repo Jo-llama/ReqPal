@@ -1,6 +1,8 @@
 import os
+import re
 import json
 import asyncio
+import threading
 from typing import Any, Dict, Tuple, List, Optional
 
 import httpx
@@ -183,12 +185,125 @@ class OllamaHTTP:
         raise RuntimeError(f"{self.name} call failed. last={last_text}")
 
 
+class QwenLocal:
+    """
+    Local Qwen2.5-Instruct model via HuggingFace transformers.
+    Model is lazy-loaded on first call (or eagerly on warmup()).
+    Set QWEN_MODEL env var to override (default: Qwen/Qwen2.5-7B-Instruct).
+    Set QWEN_LOAD_4BIT=1 to quantize to 4-bit (saves ~50% VRAM).
+    """
+
+    def __init__(self, model_id: str, name: str = "qwen"):
+        self.model_id = model_id
+        self.name = name
+        self.model = model_id  # for providers_status()
+        self._pipe = None
+        self._lock = threading.Lock()
+
+    def warmup(self):
+        """Pre-load model at startup to avoid cold-start on first request."""
+        self._load()
+
+    def _load(self):
+        if self._pipe is not None:
+            return
+        with self._lock:
+            if self._pipe is not None:
+                return
+            print(f"[QwenLocal] Loading {self.model_id} …")
+            from transformers import pipeline
+            kwargs: Dict[str, Any] = {
+                "model": self.model_id,
+                "torch_dtype": "auto",
+                "device_map": "auto",
+            }
+            if os.getenv("QWEN_LOAD_4BIT", "").strip() == "1":
+                from transformers import BitsAndBytesConfig
+                import torch
+                kwargs["quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                )
+            self._pipe = pipeline("text-generation", **kwargs)
+            print(f"[QwenLocal] {self.model_id} ready.")
+
+    def _extract_json(self, text: str) -> Dict[str, Any]:
+        text = text.strip()
+        # Strip markdown code fences
+        if "```json" in text:
+            text = text.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif "```" in text:
+            text = text.split("```", 1)[1].split("```", 1)[0].strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+        # Find first {...} or [...] block
+        for pattern in (r"\{[\s\S]*\}", r"\[[\s\S]*\]"):
+            m = re.search(pattern, text)
+            if m:
+                try:
+                    return json.loads(m.group())
+                except json.JSONDecodeError:
+                    pass
+        return {"raw": text}
+
+    def _generate_sync(
+        self,
+        system: str,
+        user_payload: Dict[str, Any],
+        temperature: float,
+        max_tokens: int,
+    ) -> Dict[str, Any]:
+        self._load()
+        messages = [
+            {
+                "role": "system",
+                "content": system + "\n\nIMPORTANT: Respond with valid JSON only. No markdown, no extra text.",
+            },
+            {
+                "role": "user",
+                "content": json.dumps(user_payload, ensure_ascii=False),
+            },
+        ]
+        outputs = self._pipe(
+            messages,
+            max_new_tokens=max_tokens,
+            temperature=max(float(temperature), 0.01),
+            do_sample=float(temperature) > 0.01,
+            return_full_text=False,
+        )
+        raw = outputs[0]["generated_text"]
+        if isinstance(raw, list):
+            raw = raw[-1].get("content", "")
+        return self._extract_json(str(raw))
+
+    async def chat_json(
+        self,
+        system: str,
+        user_payload: Dict[str, Any],
+        temperature: float = 0.1,
+        max_tokens: int = 800,
+        timeout_s: float = 180.0,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            self._generate_sync,
+            system,
+            user_payload,
+            temperature,
+            max_tokens,
+        )
+
+
 class LLMRouter:
     """
     Provider order:
-      1) Groq (if GROQ_API_KEY)
-      2) OpenAI (if OPENAI_API_KEY)
-      3) Ollama (if OLLAMA_BASE_URL or OLLAMA_MODEL)   <-- last, but works offline
+      1) Qwen (local, via HuggingFace transformers)  <-- primary
+      2) OpenAI (if OPENAI_API_KEY set)               <-- fallback
+      3) Ollama (if OLLAMA_MODEL set)                 <-- last resort
 
     Returns: (json, provider_name, trace[])
     """
@@ -196,17 +311,11 @@ class LLMRouter:
     def __init__(self):
         self.providers: List[Any] = []
 
-        groq_key = (os.getenv("GROQ_API_KEY") or "").strip()
-        if groq_key:
-            self.providers.append(
-                LLMHTTP(
-                    api_key=groq_key,
-                    base_url="https://api.groq.com/openai/v1/chat/completions",
-                    model=(os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile").strip(),
-                    name="groq",
-                )
-            )
+        # 1. Qwen local (primary)
+        qwen_model = (os.getenv("QWEN_MODEL") or "Qwen/Qwen2.5-7B-Instruct").strip()
+        self.providers.append(QwenLocal(model_id=qwen_model, name="qwen"))
 
+        # 2. OpenAI (optional fallback)
         openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
         if openai_key:
             self.providers.append(
@@ -218,14 +327,11 @@ class LLMRouter:
                 )
             )
 
-        # Ollama config
+        # 3. Ollama (optional fallback)
         ollama_url = (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").strip()
         ollama_model = (os.getenv("OLLAMA_MODEL") or "").strip()
         if ollama_model:
             self.providers.append(OllamaHTTP(base_url=ollama_url, model=ollama_model, name="ollama"))
-
-        if not self.providers:
-            raise RuntimeError("No LLM providers configured. Set GROQ_API_KEY and/or OPENAI_API_KEY and/or OLLAMA_MODEL.")
 
     def providers_status(self) -> Dict[str, Any]:
         return {

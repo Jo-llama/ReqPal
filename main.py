@@ -53,7 +53,23 @@ from backend.services.rag_llm_prompts import (
 )
 
 
-app = FastAPI(title="ReqPal RAG MVP", version="3.5.0")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    # Pre-load Qwen model at startup so first request isn't slow
+    try:
+        r = LLMRouter()
+        for p in r.providers:
+            if hasattr(p, "warmup"):
+                import threading
+                threading.Thread(target=p.warmup, daemon=True).start()
+                break
+    except Exception as e:
+        print(f"[startup] LLM warmup skipped: {e}")
+    yield
+
+app = FastAPI(title="ReqPal", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
