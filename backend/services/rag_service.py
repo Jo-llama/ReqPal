@@ -9,7 +9,7 @@ import re
 import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
-import PyPDF2
+import pypdf
 import docx
 
 from models import (
@@ -133,7 +133,7 @@ class RAGService:
 
     async def _extract_text(self, content: bytes, file_type: str) -> str:
         if file_type == "pdf":
-            reader = PyPDF2.PdfReader(BytesIO(content))
+            reader = pypdf.PdfReader(BytesIO(content))
             pages = []
             for i, page in enumerate(reader.pages):
                 t = page.extract_text() or ""

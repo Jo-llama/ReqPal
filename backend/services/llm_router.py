@@ -187,17 +187,16 @@ class OllamaHTTP:
 
 class QwenLocal:
     """
-    Local Qwen2.5-Instruct model via HuggingFace transformers.
-    Model is lazy-loaded on first call (or eagerly on warmup()).
+    Local Qwen model via LitGPT (Lightning AI native).
+    Model is lazy-loaded on first call (or eagerly via warmup()).
     Set QWEN_MODEL env var to override (default: Qwen/Qwen2.5-7B-Instruct).
-    Set QWEN_LOAD_4BIT=1 to quantize to 4-bit (saves ~50% VRAM).
     """
 
     def __init__(self, model_id: str, name: str = "qwen"):
         self.model_id = model_id
         self.name = name
         self.model = model_id  # for providers_status()
-        self._pipe = None
+        self._api = None
         self._lock = threading.Lock()
 
     def warmup(self):
@@ -205,31 +204,21 @@ class QwenLocal:
         self._load()
 
     def _load(self):
-        if self._pipe is not None:
+        if self._api is not None:
             return
         with self._lock:
-            if self._pipe is not None:
+            if self._api is not None:
                 return
-            print(f"[QwenLocal] Loading {self.model_id} …")
-            from transformers import pipeline
-            kwargs: Dict[str, Any] = {
-                "model": self.model_id,
-                "torch_dtype": "auto",
-                "device_map": "auto",
-            }
-            if os.getenv("QWEN_LOAD_4BIT", "").strip() == "1":
-                from transformers import BitsAndBytesConfig
-                import torch
-                kwargs["quantization_config"] = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.float16,
-                )
-            self._pipe = pipeline("text-generation", **kwargs)
-            print(f"[QwenLocal] {self.model_id} ready.")
+            print(f"[QwenLocal] Loading {self.model_id} via LitGPT …")
+            import torch
+            from litgpt.serve.api import LitGPTAPI
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            self._api = LitGPTAPI(model=self.model_id, device=device)
+            self._api.setup(device=device)
+            print(f"[QwenLocal] {self.model_id} ready on {device}.")
 
     def _extract_json(self, text: str) -> Dict[str, Any]:
         text = text.strip()
-        # Strip markdown code fences
         if "```json" in text:
             text = text.split("```json", 1)[1].split("```", 1)[0].strip()
         elif "```" in text:
@@ -238,7 +227,6 @@ class QwenLocal:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
-        # Find first {...} or [...] block
         for pattern in (r"\{[\s\S]*\}", r"\[[\s\S]*\]"):
             m = re.search(pattern, text)
             if m:
@@ -266,17 +254,10 @@ class QwenLocal:
                 "content": json.dumps(user_payload, ensure_ascii=False),
             },
         ]
-        outputs = self._pipe(
-            messages,
-            max_new_tokens=max_tokens,
-            temperature=max(float(temperature), 0.01),
-            do_sample=float(temperature) > 0.01,
-            return_full_text=False,
-        )
-        raw = outputs[0]["generated_text"]
-        if isinstance(raw, list):
-            raw = raw[-1].get("content", "")
-        return self._extract_json(str(raw))
+        full_response = ""
+        for chunk in self._api.chat(messages=messages):
+            full_response += chunk.text
+        return self._extract_json(full_response)
 
     async def chat_json(
         self,
