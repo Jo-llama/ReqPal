@@ -375,7 +375,7 @@ async def rag_answer(req: RAGAnswerRequest):
                 retries=1,
             )
             rewritten_query = (rewrite_json.get("rewritten_query") or req.query).strip()
-            llm_trace_parts.append(f"rewrite:ok({provider}) [{' | '.join(_trace)}]")
+            llm_trace_parts.append(f"rewrite:ok({provider})")
         except Exception as e:
             msg = str(e)
             if len(msg) > 120: msg = msg[:120] + "…"
