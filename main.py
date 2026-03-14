@@ -456,6 +456,7 @@ async def rag_answer(req: RAGAnswerRequest):
                 backoff_s=1.0,
             )
 
+            print(f"[DEBUG] ans_json keys={list(ans_json.keys()) if isinstance(ans_json, dict) else type(ans_json)} value={str(ans_json)[:300]}")
             if isinstance(ans_json, dict):
                 # Handle case where JSON parsing failed and Qwen returned {"raw": "..."}
                 if "raw" in ans_json and "answer" not in ans_json:
