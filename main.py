@@ -450,20 +450,30 @@ async def rag_answer(req: RAGAnswerRequest):
                     "context_chunks": context_chunks,
                 },
                 temperature=0.1,
-                max_tokens=520,
+                max_tokens=1200,
                 timeout_s=120.0,
                 retries=1,
                 backoff_s=1.0,
             )
 
             if isinstance(ans_json, dict):
-                answer_payload = {
-                    "answer": ans_json.get("answer", answer_payload["answer"]),
-                    "acceptance_criteria": ans_json.get("acceptance_criteria", []),
-                    "edge_cases": ans_json.get("edge_cases", []),
-                    "open_questions": ans_json.get("open_questions", []),
-                    "citations_used": ans_json.get("citations_used", top_ids) or top_ids,
-                }
+                # Handle case where JSON parsing failed and Qwen returned {"raw": "..."}
+                if "raw" in ans_json and "answer" not in ans_json:
+                    answer_payload = {
+                        "answer": [ans_json["raw"]],
+                        "acceptance_criteria": [],
+                        "edge_cases": [],
+                        "open_questions": [],
+                        "citations_used": top_ids,
+                    }
+                else:
+                    answer_payload = {
+                        "answer": ans_json.get("answer", answer_payload["answer"]),
+                        "acceptance_criteria": ans_json.get("acceptance_criteria", []),
+                        "edge_cases": ans_json.get("edge_cases", []),
+                        "open_questions": ans_json.get("open_questions", []),
+                        "citations_used": ans_json.get("citations_used", top_ids) or top_ids,
+                    }
 
             llm_trace_parts.append(f"answer:ok({provider})")
         except Exception as e:
