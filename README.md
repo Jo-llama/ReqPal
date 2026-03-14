@@ -1,8 +1,8 @@
 # ReqPal
 
-**AI-powered requirements management platform for regulatory compliance workflows.**
+**Your requirements companion — AI-powered requirements management for any domain.**
 
-ReqPal helps Product Managers turn compliance documents and stakeholder input into validated, Jira-ready user stories — using RAG, LLM-guided chat, and a structured review workflow.
+ReqPal helps Product Managers turn compliance documents and stakeholder input into validated, Jira-ready user stories using RAG, LLM-guided chat, and a structured review workflow.
 
 ---
 
@@ -12,7 +12,7 @@ ReqPal helps Product Managers turn compliance documents and stakeholder input in
 Documents → RAG → Stakeholder Chat → Requirements → AI User Stories → Review → Export
 ```
 
-1. **PM uploads compliance documents** (PDFs, DOCX, regulations, specs)
+1. **PM uploads documents** (PDFs, DOCX, regulations, specs, CSV, JSON)
 2. **PM creates stakeholders** and shares their personal dashboard link
 3. **Stakeholders chat with an AI assistant** that extracts structured requirements from the conversation
 4. **AI generates user stories** grounded in both stakeholder requirements and uploaded documents
@@ -35,15 +35,23 @@ Documents → RAG → Stakeholder Chat → Requirements → AI User Stories → 
 - Export accepted stories as CSV or JSON
 
 ### RAG Engine
-- Local embeddings: `BAAI/bge-small-en-v1.5` (no API cost)
-- Cross-encoder reranking: `BAAI/bge-reranker-base`
+- Local embeddings: `BAAI/bge-small-en-v1.5` (CPU, no API cost)
+- Cross-encoder reranking: `cross-encoder/ms-marco-MiniLM-L-6-v2` (CPU, 22 MB)
 - Three ChromaDB collections: compliance documents, stakeholder requirements, user stories
+- Query rewriting + domain-aware terminology enrichment
 
-### LLM — Qwen2.5 (local)
-- Primary: **Qwen/Qwen2.5-7B-Instruct** running fully locally via HuggingFace transformers
-- No external LLM API required
-- Optional fallback: OpenAI (set `OPENAI_API_KEY`), Ollama (set `OLLAMA_MODEL`)
-- Model loads once at startup, all inference stays on-device
+### LLM Providers (cascading fallback)
+
+| Priority | Provider | Config |
+|---|---|---|
+| 1 | **Groq** (primary) | `GROQ_API_KEY` — fast, free tier, `llama-3.3-70b-versatile` |
+| 2 | **Lightning AI** | `LIGHTNING_API_KEY` — fallback on Groq rate limit |
+| 3 | **LitServe** (local Qwen) | `LITSERVE_ENABLED=1` — opt-in, requires GPU |
+| 4 | **Qwen local** (transformers) | `QWEN_LOCAL_ENABLED=1` — opt-in, requires GPU |
+| 5 | **OpenAI** | `OPENAI_API_KEY` — optional |
+| 6 | **Ollama** | `OLLAMA_MODEL` — optional |
+
+The app works **without a GPU** when Groq or another cloud provider is configured.
 
 ### User Story Workflow
 ```
@@ -60,8 +68,8 @@ ai_generated → pending_review → accepted (stakeholder) → pm_validated → 
 ## Quick Start (Local)
 
 ### Prerequisites
-- Python 3.9+
-- GPU with 16 GB+ VRAM recommended (CPU also works, slower)
+- Python 3.10+
+- A free [Groq API key](https://console.groq.com) (recommended — no GPU needed)
 
 ### Installation
 
@@ -76,13 +84,20 @@ pip install -r requirements.txt
 Create a `.env` file:
 
 ```env
-# Qwen model (default: Qwen/Qwen2.5-7B-Instruct)
-QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct
+# Primary LLM — get a free key at console.groq.com
+GROQ_API_KEY=your_groq_key_here
+GROQ_MODEL=llama-3.3-70b-versatile   # optional, this is the default
 
-# Set to 1 to load in 4-bit quantization (~8 GB VRAM instead of ~15 GB)
-QWEN_LOAD_4BIT=0
+# Optional cloud fallback (Lightning AI)
+# LIGHTNING_API_KEY=your_lightning_key
+# LIGHTNING_MODEL=lightning-ai/llama-3.3-70b
 
-# Optional fallback LLMs
+# Optional local fallbacks (require GPU)
+# LITSERVE_ENABLED=1
+# QWEN_LOCAL_ENABLED=1
+# QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct
+
+# Optional additional fallbacks
 # OPENAI_API_KEY=sk-...
 # OLLAMA_MODEL=qwen2.5:7b
 ```
@@ -90,20 +105,47 @@ QWEN_LOAD_4BIT=0
 ### Run
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8001
+uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
 Open **http://localhost:8001**
 
-> First run downloads the Qwen model (~15 GB). Subsequent starts load from cache.
+---
+
+## Deploy on Railway (Docker)
+
+The recommended production deployment — CPU-only, no GPU required.
+
+### 1. Connect your repo
+
+Go to [railway.app](https://railway.app), create a new project, and connect your GitHub repo. Railway auto-detects the `Dockerfile`.
+
+### 2. Set environment variables
+
+In Railway → your service → **Variables**, add:
+
+```
+GROQ_API_KEY=your_groq_key
+LIGHTNING_API_KEY=your_lightning_key   # optional fallback
+```
+
+### 3. Add a volume
+
+In Railway → your service → **Volumes**, mount a persistent volume at `/app/storage` to persist your database and vector store between deploys.
+
+### 4. Deploy
+
+Railway builds and deploys automatically on every push to `main`.
 
 ---
 
-## Deploy on Lightning AI
+## Deploy on Lightning AI (GPU)
+
+Use this path if you want to run a local Qwen model alongside the app.
 
 ### 1. Create a Studio
 
-Go to [lightning.ai](https://lightning.ai), create a new **Studio** with a GPU instance (L4 or A10G recommended — 24 GB VRAM).
+Go to [lightning.ai](https://lightning.ai), create a new **Studio** with a GPU instance (L4 or A10G, 24 GB VRAM).
 
 ### 2. Clone and configure
 
@@ -111,10 +153,11 @@ Go to [lightning.ai](https://lightning.ai), create a new **Studio** with a GPU i
 git clone https://github.com/Jo-llama/ReqPal.git
 cd ReqPal
 
-# Create .env
 cat > .env << 'ENV'
+GROQ_API_KEY=your_groq_key
+LITSERVE_ENABLED=1
+QWEN_LOCAL_ENABLED=1
 QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct
-QWEN_LOAD_4BIT=0
 ENV
 ```
 
@@ -124,21 +167,20 @@ ENV
 bash startup.sh
 ```
 
-The startup script installs dependencies and starts the server on port 8001.
+The startup script installs dependencies, starts the Qwen LitServe server on port 8000, and the FastAPI app on port 8001.
 
 ### 4. Access
 
-In Lightning AI Studio, use **Port Forwarding** to expose port `8001`. The PM Dashboard will be available at the forwarded URL.
+In Lightning AI Studio, use **Port Forwarding** to expose port `8001`.
 
-### VRAM Guide
+### VRAM Guide (local Qwen)
 
 | Model | Float16 | 4-bit (`QWEN_LOAD_4BIT=1`) |
 |---|---|---|
 | Qwen2.5-7B-Instruct | ~15 GB | ~5 GB |
 | Qwen2.5-14B-Instruct | ~30 GB | ~10 GB |
-| Qwen2.5-72B-Instruct | ~150 GB | ~45 GB |
 
-For Lightning AI free tier (T4, 16 GB), use `Qwen2.5-7B-Instruct` with `QWEN_LOAD_4BIT=0`, or `Qwen2.5-14B-Instruct` with `QWEN_LOAD_4BIT=1`.
+> When `GROQ_API_KEY` is set, Groq handles all LLM calls and the local model is only used as a fallback — you can skip the GPU entirely for production.
 
 ---
 
@@ -150,20 +192,21 @@ ReqPal/
 ├── models.py                        # Pydantic models & enums
 ├── storage.py                       # SQLite CRUD — all entities
 ├── db_schema.py                     # SQLite schema (13 tables)
-├── requirements.txt
+├── requirements.txt                 # Full dependencies (includes GPU/local LLM)
+├── requirements-deploy.txt          # CPU-only dependencies (for Docker/Railway)
+├── Dockerfile                       # CPU-only container for Railway
 ├── startup.sh                       # Lightning AI startup script
 │
 ├── backend/
 │   └── services/
 │       ├── rag_service.py           # Chunking, embedding, ChromaDB retrieval
-│       ├── reranker_service.py      # BGE cross-encoder reranking
-│       ├── llm_router.py            # Qwen (local) → OpenAI → Ollama fallback
-│       ├── groq_http.py             # Legacy HTTP client (unused)
+│       ├── reranker_service.py      # Cross-encoder reranking (lazy-loaded, CPU)
+│       ├── llm_router.py            # Groq → Lightning → LitServe → Qwen → OpenAI → Ollama
 │       └── rag_llm_prompts.py       # All LLM prompt templates
 │
 └── static/
-    ├── index.html                   # PM Dashboard (tabbed)
-    └── dashboard.html               # Stakeholder Dashboard
+    ├── index.html                   # PM Dashboard (tabbed, responsive)
+    └── dashboard.html               # Stakeholder Dashboard (responsive)
 ```
 
 ---
@@ -175,12 +218,10 @@ ReqPal/
 | API | FastAPI |
 | Persistence | SQLite |
 | Vector Store | ChromaDB |
-| Embeddings | `BAAI/bge-small-en-v1.5` (local) |
-| Reranker | `BAAI/bge-reranker-base` (local) |
-| LLM | Qwen2.5-Instruct (local, HuggingFace transformers) |
-| Frontend | Vanilla JS, no build step |
-
-Everything runs locally — no mandatory external APIs.
+| Embeddings | `BAAI/bge-small-en-v1.5` (local, CPU) |
+| Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` (local, CPU, 22 MB) |
+| LLM | Groq / Lightning AI / Qwen (local) / OpenAI / Ollama |
+| Frontend | Vanilla JS, responsive, no build step |
 
 ---
 
