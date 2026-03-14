@@ -4,6 +4,14 @@ set -e
 
 echo "=== ReqPal startup ==="
 
+# Kill any existing processes on ports 8000/8001
+echo "=== Cleaning up existing processes ==="
+fuser -k 8000/tcp 2>/dev/null || true
+fuser -k 8001/tcp 2>/dev/null || true
+pkill -f "uvicorn main:app" 2>/dev/null || true
+pkill -f "python server.py" 2>/dev/null || true
+sleep 2
+
 # Upgrade pip + setuptools first — required for Python 3.12 compatibility
 pip install --upgrade pip setuptools wheel
 
