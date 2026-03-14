@@ -29,8 +29,8 @@
       --serif: 'Crimson Pro', Georgia, serif;
     }
     *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{ margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); }
+    html{scroll-behavior:smooth; overflow-x:hidden;}
+    body{ margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); overflow-x:hidden; max-width:100vw; }
 
     .topbar{
       position:sticky; top:0; z-index:50;
@@ -176,7 +176,7 @@
     .results{display:flex;flex-direction:column;gap:12px}
     .result{
       border:1px solid var(--border); border-radius:14px;
-      padding:14px;background:#fff;
+      padding:14px;background:#fff;overflow:hidden;max-width:100%;
     }
     .result-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;align-items:flex-start}
     .r-title{margin:0;font-weight:900;font-size:14px}
@@ -185,6 +185,7 @@
       font-family:var(--mono); font-size:12px;
       background:rgba(137,2,62,.04); border:1px solid var(--border);
       border-radius:12px; padding:10px; white-space:pre-wrap; line-height:1.5;
+      overflow-x:auto; word-break:break-word; max-width:100%;
     }
 
     /* % badge + tooltip */
