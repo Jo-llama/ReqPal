@@ -4,25 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ReqPal — Stakeholder Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#f7f0f1;
-      --card:#fff;
-      --text:#2a1a1f;
-      --muted:#7a5c63;
-      --border:#e0cdd0;
-      --primary:#7a1535;
-      --primary2:#5e0f28;
-      --accent:#c97a8a;
-      --teal:#75b09c;
-      --rose:#c97a8a;
-      --cream:#fff275;
-      --bad:#b35a5b;
-      --good:#5d9a84;
-      --shadow:0 10px 26px rgba(122,21,53,.07);
-      --radius:14px;
+      --bg: #f0efec;
+      --card: #faf9f7;
+      --text: #2a1a1f;
+      --muted: #7a6a6e;
+      --border: #dedad6;
+      --primary: #89023e;
+      --primary2: #6a0030;
+      --accent: #cc7178;
+      --teal: #7a9e5a;
+      --rose: #cc7178;
+      --cream: #e8f0df;
+      --bad: #b35a5b;
+      --good: #5d8a45;
+      --shadow: 0 10px 26px rgba(137,2,62,.06);
+      --radius: 14px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --serif: 'Crimson Pro', Georgia, serif;
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
@@ -30,37 +34,67 @@
 
     .topbar{
       position:sticky; top:0; z-index:50;
-      background:rgba(247,240,241,.95);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--border);
+      background:#fed6d6;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(137,2,62,.15);
     }
     .topbar::after{
-      content:"";display:block;height:2px;
-      background:linear-gradient(90deg,var(--primary),var(--teal),var(--accent),var(--cream));
+      content:""; display:block; height:2px;
+      background:linear-gradient(90deg,
+        rgba(137,2,62,.0) 0%,
+        rgba(137,2,62,.5) 20%,
+        rgba(122,158,90,.8) 50%,
+        rgba(137,2,62,.4) 80%,
+        rgba(137,2,62,.0) 100%
+      );
     }
     .topbar-inner{
-      max-width:900px; margin:0 auto; padding:14px 18px;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      max-width:900px; margin:0 auto; padding:0 18px;
+      display:flex; align-items:stretch; justify-content:space-between; gap:12px;
+      min-height:80px;
     }
-    .brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:.2px;}
-    .dot{width:10px;height:10px;border-radius:999px;background:var(--primary);}
+    .brand{
+      display:flex; align-items:center; gap:14px;
+      text-decoration:none; padding:8px 0;
+    }
+    .brand-logo-wrap{
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .brand-logo-wrap img{ height:58px; width:auto; display:block; }
+    .brand:hover .brand-logo-wrap{ opacity:.9; }
+    .brand-text{ display:flex; flex-direction:column; gap:2px; }
+    .brand-name{
+      font-family:var(--sans); font-weight:800; font-size:20px;
+      letter-spacing:-.3px; color:var(--primary); line-height:1;
+    }
+    .brand-tagline{
+      font-family:var(--serif); font-style:italic; font-size:13px;
+      color:rgba(137,2,62,.65); letter-spacing:.01em; line-height:1; white-space:nowrap;
+    }
+    .topbar-divider{
+      width:1px; background:rgba(137,2,62,.15); margin:14px 4px; flex-shrink:0;
+    }
+    .topbar-actions{ display:flex; align-items:center; gap:10px; }
+
     .badge{
       font-size:12px; padding:4px 10px; border-radius:999px;
-      border:1px solid var(--border); background:#fff; color:var(--muted);
+      border:1px solid rgba(137,2,62,.2); background:rgba(255,255,255,.5); color:var(--primary);
+      font-family:var(--sans);
     }
 
     .btn{
-      border:0;border-radius:10px;padding:10px 12px;font-weight:750;
-      cursor:pointer;font-size:14px;transition:all .15s ease;
+      border:0; border-radius:10px; padding:10px 12px; font-weight:750;
+      cursor:pointer; font-size:14px; transition:all .15s ease; font-family:var(--sans);
     }
-    .btn:active{transform:translateY(1px)}
-    .btn-primary{background:var(--primary);color:#fff;}
-    .btn-primary:hover{background:var(--primary2);box-shadow:0 4px 12px rgba(58,68,93,.25)}
-    .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--text);}
-    .btn-ghost:hover{background:#f4f7f8;border-color:var(--accent)}
-    .btn-danger{background:var(--bad);color:#fff;}
-    .btn-danger:hover{filter:brightness(.92);box-shadow:0 4px 12px rgba(179,90,91,.2)}
-    .btn-small{padding:8px 10px;font-size:13px}
+    .btn:active{ transform:translateY(1px); }
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary2); box-shadow:0 4px 12px rgba(58,68,93,.25); }
+    .btn-ghost{ background:rgba(255,255,255,.5); border:1px solid rgba(137,2,62,.25); color:var(--primary); }
+    .btn-ghost:hover{ background:rgba(255,255,255,.8); border-color:rgba(137,2,62,.4); }
+    .btn-danger{ background:var(--bad); color:#fff; }
+    .btn-danger:hover{ filter:brightness(.92); box-shadow:0 4px 12px rgba(179,90,91,.2); }
+    .btn-small{ padding:8px 10px; font-size:13px; }
 
     .container{max-width:900px;margin:0 auto;padding:18px 18px 42px;display:flex;flex-direction:column;gap:16px;}
 
@@ -88,11 +122,12 @@
     input, textarea, select{
       width:100%; padding:10px 12px; border:1px solid var(--border);
       border-radius:10px; background:#fff; font-size:14px; outline:none;
+      font-family:var(--sans);
     }
     textarea{min-height:80px;resize:vertical}
     input:focus, textarea:focus, select:focus{
       border-color:var(--teal);
-      box-shadow:0 0 0 4px rgba(117,176,156,.15);
+      box-shadow:0 0 0 4px rgba(122,158,90,.15);
     }
     input::placeholder, textarea::placeholder{color:#a0b0b6}
 
@@ -185,11 +220,20 @@
 <body>
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="brand">
-        <img src="/static/logo.png" alt="ReqPal" style="height:48px;width:auto;object-fit:contain;border-radius:10px;" />
+      <a class="brand" href="#">
+        <div class="brand-logo-wrap">
+          <img src="/static/logo.png" alt="ReqPal logo" />
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">ReqPal</span>
+          <span class="brand-tagline">Your requirements companion</span>
+        </div>
+      </a>
+      <div class="topbar-divider"></div>
+      <div class="topbar-actions">
         <span class="badge">Stakeholder Dashboard</span>
+        <span class="badge" id="stakeholder-badge">Loading...</span>
       </div>
-      <span class="badge" id="stakeholder-badge">Loading...</span>
     </div>
   </div>
 
