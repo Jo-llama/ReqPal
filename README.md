@@ -95,9 +95,6 @@ GROQ_MODEL=llama-3.3-70b-versatile   # optional, this is the default
 # QWEN_LOCAL_ENABLED=1
 # QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct
 
-# Optional additional fallbacks
-# OPENAI_API_KEY=sk-...
-# OLLAMA_MODEL=qwen2.5:7b
 ```
 
 ### Run
