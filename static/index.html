@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ReqPal — RAG Dashboard</title>
+  <title>ReqPal — Your Requirements Companion</title>
   <style>
     :root{
       --bg:#eef1f3;
@@ -306,7 +306,8 @@
     <div class="topbar-inner">
       <div class="brand">
         <span class="dot"></span>
-        ReqPal <span class="badge">RAG MVP</span>
+        ReqPal
+        <span style="font-weight:400;font-size:13px;color:var(--muted);margin-left:4px">— your requirements companion</span>
       </div>
       <div class="row">
         <span class="badge" id="api-status">API: …</span>
@@ -332,16 +333,16 @@
           <div style="display:flex;flex-direction:column;gap:10px">
             <div>
               <label>Project name</label>
-              <input id="p-name" placeholder="Banking Platform Modernization" />
+              <input id="p-name" placeholder="e.g. Patient Portal Modernization" />
             </div>
             <div>
               <label>Description</label>
-              <textarea id="p-desc" placeholder="Customer-facing portal with SOC2/GDPR scope"></textarea>
+              <textarea id="p-desc" placeholder="e.g. Customer-facing portal for managing appointments and health records"></textarea>
             </div>
             <div class="split">
               <div>
                 <label>Domain</label>
-                <input id="p-domain" placeholder="Banking" />
+                <input id="p-domain" placeholder="e.g. Healthcare, Fintech, Retail" />
               </div>
               <div>
                 <label>Intent</label>
@@ -356,7 +357,7 @@
             </div>
             <div>
               <label>Regulatory exposure (comma-separated)</label>
-              <input id="p-regs" placeholder="SOC2, GDPR, PCI-DSS" />
+              <input id="p-regs" placeholder="e.g. GDPR, HIPAA, ISO 27001" />
             </div>
             <div class="row">
               <button class="btn btn-primary" onclick="createProject()">Create</button>
@@ -412,7 +413,7 @@
             <div class="split">
               <div>
                 <label>Question</label>
-                <input id="q" placeholder="What does SOC2 require for incident response in banking platforms?" />
+                <input id="q" placeholder="e.g. What are the data retention requirements for patient records?" />
                 <span class="tipbox">
                   The answer is generated from retrieved chunks. If the LLM is rate-limited, you may still see retrieved context with no generated answer.
                   Hover over "% match" to see how similarity is calculated.
