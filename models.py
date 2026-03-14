@@ -31,6 +31,16 @@ class StakeholderType(str, Enum):
     CONTROL = "control"
     EXTERNAL = "external"
 
+class CollectionName(str, Enum):
+    COMPLIANCE = "compliance_documents"
+    REQUIREMENTS = "stakeholder_requirements"
+    USER_STORIES = "user_stories"
+
+class RetrievalMode(str, Enum):
+    ALL = "all"
+    COMPLIANCE = "compliance"
+    REQUIREMENTS = "requirements"
+
 # ==================== ENHANCED PROJECT ====================
 
 class Project(BaseModel):
@@ -139,22 +149,42 @@ class Requirement(BaseModel):
     created_at: str = datetime.now().isoformat()
     metadata: Optional[Dict[str, Any]] = {}
 
+# ==================== STAKEHOLDER REQUIREMENTS (Vector-indexed) ====================
+
+class StakeholderRequirement(BaseModel):
+    """A stakeholder requirement stored in both JSON storage and ChromaDB."""
+    id: Optional[int] = None
+    project_id: int
+    title: str
+    description: str
+    stakeholder_role: str  # "PM", "Engineering Lead", etc.
+    stakeholder_id: Optional[int] = None
+    category: str = "functional"
+    priority: str = "Must Have"
+    source: str = "manual"  # "manual", "bulk_import", "ai_extracted", "dashboard_chat"
+    import_batch_id: Optional[str] = None
+    regulatory_mandate: bool = False
+    regulatory_references: List[str] = []
+    created_at: str = datetime.now().isoformat()
+    metadata: Optional[Dict[str, Any]] = {}
+
 # ==================== USER STORIES (Enhanced) ====================
 
 class UserStory(BaseModel):
     id: Optional[int] = None
     project_id: Optional[int] = None
     requirement_id: Optional[int] = None
+    stakeholder_id: Optional[int] = None
     title: str
     description: str
     acceptance_criteria: Optional[str] = ""
     category: str = "functional"
     priority: Optional[str] = "Must Have"
-    
+
     # NEW: Traceability
     source_documents: List[int] = []  # Documents that led to this story
-    
-    status: str = "ai_generated"
+
+    status: str = "ai_generated"  # pending_review, accepted, rejected, pm_validated, manual
     pm_validated: bool = False
     stakeholder_validated: bool = False
     created_at: str = datetime.now().isoformat()
@@ -296,6 +326,41 @@ class RAGResult(BaseModel):
     related_requirements: List[int] = []
     related_risks: List[int] = []
 
+class RetrievalResult(BaseModel):
+    """Result from multi-collection retrieval."""
+    chunk_id: str
+    document_id: Optional[int] = None
+    requirement_id: Optional[int] = None
+    story_id: Optional[int] = None
+    document_name: str
+    content: str
+    similarity_score: float
+    source_collection: CollectionName
+    # Context
+    page_number: Optional[int] = None
+    section: Optional[str] = None
+    classification: Optional[str] = None
+    stakeholder_role: Optional[str] = None
+    category: Optional[str] = None
+
+# ==================== BULK IMPORT ====================
+
+class BulkImportItem(BaseModel):
+    title: str
+    description: str
+    stakeholder_role: str
+    category: str = "functional"
+    priority: str = "Must Have"
+    regulatory_mandate: bool = False
+    regulatory_references: List[str] = []
+
+class BulkImportResponse(BaseModel):
+    success: bool
+    import_batch_id: str
+    imported_count: int
+    errors: List[str] = []
+    preview: List[StakeholderRequirement] = []
+
 # ==================== ORIGINAL MODELS (KEPT FOR COMPATIBILITY) ====================
 
 class ProcessMap(BaseModel):
@@ -361,3 +426,25 @@ class RAGAnswerResponse(BaseModel):
     edge_cases: List[str]
     open_questions: List[str]
     citations_used: List[str]
+
+# ==================== DASHBOARD MODELS ====================
+
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+class DashboardChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+class DashboardChatResponse(BaseModel):
+    reply: str
+    finished: bool
+    draft_requirement: Optional[Dict[str, Any]] = None
+
+class DashboardRequirementSubmission(BaseModel):
+    title: str
+    description: str
+    category: str = "functional"
+    priority: str = "Must Have"
+    regulatory_mandate: bool = False
+    regulatory_references: List[str] = []

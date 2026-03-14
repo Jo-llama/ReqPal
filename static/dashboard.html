@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ReqPal — Stakeholder Dashboard</title>
+  <style>
+    :root{
+      --bg:#eef1f3;
+      --card:#fff;
+      --text:#2a3144;
+      --muted:#6b7a82;
+      --border:#cdd6da;
+      --primary:#3a445d;
+      --primary2:#2d3549;
+      --accent:#95adb6;
+      --teal:#75b09c;
+      --rose:#c78283;
+      --cream:#fff275;
+      --bad:#b35a5b;
+      --good:#5d9a84;
+      --shadow:0 10px 26px rgba(58,68,93,.07);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text);}
+
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background:rgba(238,241,243,.92);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar::after{
+      content:"";display:block;height:2px;
+      background:linear-gradient(90deg,var(--primary),var(--teal),var(--accent),var(--cream));
+    }
+    .topbar-inner{
+      max-width:900px; margin:0 auto; padding:14px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:.2px;}
+    .dot{width:10px;height:10px;border-radius:999px;background:var(--primary);}
+    .badge{
+      font-size:12px; padding:4px 10px; border-radius:999px;
+      border:1px solid var(--border); background:#fff; color:var(--muted);
+    }
+
+    .btn{
+      border:0;border-radius:10px;padding:10px 12px;font-weight:750;
+      cursor:pointer;font-size:14px;transition:all .15s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--primary);color:#fff;}
+    .btn-primary:hover{background:var(--primary2);box-shadow:0 4px 12px rgba(58,68,93,.25)}
+    .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--text);}
+    .btn-ghost:hover{background:#f4f7f8;border-color:var(--accent)}
+    .btn-danger{background:var(--bad);color:#fff;}
+    .btn-danger:hover{filter:brightness(.92);box-shadow:0 4px 12px rgba(179,90,91,.2)}
+    .btn-small{padding:8px 10px;font-size:13px}
+
+    .container{max-width:900px;margin:0 auto;padding:18px 18px 42px;display:flex;flex-direction:column;gap:16px;}
+
+    .panel{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      transition:box-shadow .2s ease;
+    }
+    .panel:hover{box-shadow:0 14px 34px rgba(58,68,93,.10)}
+    .panel-header{
+      padding:14px 14px 12px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .panel-header h2{
+      margin:0; font-size:13px; letter-spacing:.09em; text-transform:uppercase;
+      color:var(--muted); font-weight:800;
+    }
+    .panel-body{padding:14px}
+
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .row{display:flex;gap:10px;align-items:center}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+    label{font-size:12px;color:var(--muted);font-weight:650;display:block;margin-bottom:6px}
+    input, textarea, select{
+      width:100%; padding:10px 12px; border:1px solid var(--border);
+      border-radius:10px; background:#fff; font-size:14px; outline:none;
+    }
+    textarea{min-height:80px;resize:vertical}
+    input:focus, textarea:focus, select:focus{
+      border-color:var(--teal);
+      box-shadow:0 0 0 4px rgba(117,176,156,.15);
+    }
+    input::placeholder, textarea::placeholder{color:#a0b0b6}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      font-size:12px;color:var(--muted);
+      border:1px solid var(--border);background:#fff;border-radius:999px;
+      padding:4px 10px;margin-top:4px;
+    }
+
+    /* Chat */
+    .chat-area{
+      height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;
+      padding:14px; background:rgba(149,173,182,.08); border-radius:12px; border:1px solid var(--border);
+    }
+    .chat-msg{
+      max-width:80%; padding:10px 14px; border-radius:14px;
+      font-size:14px; line-height:1.5; white-space:pre-wrap;
+      animation:fadeUp .2s ease;
+    }
+    .chat-msg.user{
+      align-self:flex-end; background:var(--primary); color:#fff;
+      border-bottom-right-radius:4px;
+    }
+    .chat-msg.assistant{
+      align-self:flex-start; background:#fff; border:1px solid var(--border);
+      border-bottom-left-radius:4px;
+    }
+    .chat-msg.system{
+      align-self:center; background:rgba(117,176,156,.1); color:var(--muted);
+      font-size:12px; border-radius:10px;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
+    .thinking::after{content:"";animation:dots 1.2s steps(1) infinite}
+    .chat-input-row{
+      display:flex; gap:10px; margin-top:10px;
+    }
+    .chat-input-row input{flex:1}
+
+    /* Draft card */
+    .draft-card{
+      border:2px solid rgba(117,176,156,.3); border-radius:14px;
+      padding:14px; background:rgba(117,176,156,.06); margin-top:10px;
+    }
+    .draft-card h3{margin:0 0 8px;font-size:15px;font-weight:900;}
+    .draft-field{margin-bottom:8px}
+    .draft-field label{margin-bottom:2px}
+
+    /* Requirement list item */
+    .req-item{
+      border:1px solid var(--border); border-radius:12px; padding:12px;
+      background:#fff; margin-bottom:8px;
+    }
+    .req-title{margin:0;font-size:14px;font-weight:850}
+    .req-desc{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.4}
+
+    /* Doc summary */
+    .doc-item{
+      border:1px solid var(--border); border-radius:12px; padding:12px;
+      background:#fff; margin-bottom:8px;
+    }
+    .doc-name{font-weight:800;font-size:14px;margin:0}
+    .doc-preview{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+    /* Duplicate notice */
+    .dup-notice{
+      border:1px solid rgba(255,242,117,.5); border-radius:12px;
+      padding:10px 14px; background:rgba(255,242,117,.15);
+      font-size:13px; color:#7a6a10; margin-top:10px;
+    }
+
+    .toast{
+      position:fixed; right:16px; top:16px; z-index:999;
+      background:var(--primary); color:#fff; padding:12px 14px;
+      border-radius:12px; box-shadow:0 12px 28px rgba(58,68,93,.3);
+      opacity:0; transform:translateY(-8px);
+      transition:opacity .2s ease, transform .2s ease;
+      max-width:420px; font-weight:600;
+    }
+    .toast.show{opacity:1;transform:translateY(0)}
+
+    .loading{color:var(--accent);font-size:13px;padding:10px}
+
+    /* Panel enter animation */
+    .panel{animation:fadeUp .3s ease}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="dot"></span>
+        ReqPal <span class="badge">Stakeholder Dashboard</span>
+      </div>
+      <span class="badge" id="stakeholder-badge">Loading...</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Project overview -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Project Overview</h2>
+      </div>
+      <div class="panel-body" id="project-overview">
+        <div class="loading">Loading project info...</div>
+      </div>
+    </div>
+
+    <!-- AI Chat (top priority) -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>AI Requirements Assistant</h2>
+        <button class="btn btn-ghost btn-small" onclick="resetChat()">New Chat</button>
+      </div>
+      <div class="panel-body">
+        <div class="chat-area" id="chat-area">
+          <div class="chat-msg system">Hi! I'll help you articulate your requirements. Tell me about a need or problem you'd like to address.</div>
+        </div>
+        <div class="chat-input-row">
+          <input id="chat-input" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn btn-primary" onclick="sendChat()" id="btn-send">Send</button>
+        </div>
+
+        <!-- Draft requirement preview -->
+        <div id="draft-area" style="display:none">
+          <div class="draft-card">
+            <h3>Draft Requirement</h3>
+            <div class="draft-field">
+              <label>Title</label>
+              <input id="draft-title" />
+            </div>
+            <div class="draft-field">
+              <label>Description</label>
+              <textarea id="draft-desc"></textarea>
+            </div>
+            <div class="split">
+              <div class="draft-field">
+                <label>Category</label>
+                <select id="draft-category">
+                  <option value="functional">functional</option>
+                  <option value="non_functional">non_functional</option>
+                  <option value="compliance">compliance</option>
+                  <option value="security">security</option>
+                  <option value="performance">performance</option>
+                </select>
+              </div>
+              <div class="draft-field">
+                <label>Priority</label>
+                <select id="draft-priority">
+                  <option value="Must Have">Must Have</option>
+                  <option value="Should Have">Should Have</option>
+                  <option value="Could Have">Could Have</option>
+                  <option value="Won't Have">Won't Have</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn btn-primary" onclick="submitRequirement()">Submit Requirement</button>
+              <button class="btn btn-ghost" onclick="editDraft()">Keep Editing</button>
+            </div>
+          </div>
+
+          <div id="dup-notice" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- My submitted requirements -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>My Requirements</h2>
+        <div class="row">
+          <span class="badge" id="req-count">0</span>
+          <button class="btn btn-primary btn-small" onclick="toggleManualForm()">Add Manually</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <!-- Manual add/edit form -->
+        <div id="manual-form" style="display:none;margin-bottom:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px">
+            <div class="hint" style="font-weight:700" id="manual-form-title">Add requirement</div>
+            <button class="btn btn-ghost btn-small" onclick="toggleManualForm()">Close</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label>Title</label>
+              <input id="manual-title" placeholder="Short descriptive title" />
+            </div>
+            <div>
+              <label>Description</label>
+              <textarea id="manual-desc" placeholder="Describe the requirement in detail"></textarea>
+            </div>
+            <div class="split">
+              <div>
+                <label>Category</label>
+                <select id="manual-category">
+                  <option value="functional">functional</option>
+                  <option value="non_functional">non_functional</option>
+                  <option value="compliance">compliance</option>
+                  <option value="security">security</option>
+                  <option value="performance">performance</option>
+                </select>
+              </div>
+              <div>
+                <label>Priority</label>
+                <select id="manual-priority">
+                  <option value="Must Have">Must Have</option>
+                  <option value="Should Have">Should Have</option>
+                  <option value="Could Have">Could Have</option>
+                  <option value="Won't Have">Won't Have</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <button class="btn btn-primary" id="manual-submit-btn" onclick="submitManualRequirement()">Add</button>
+              <button class="btn btn-ghost" onclick="toggleManualForm()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="my-requirements">
+          <div class="hint">No requirements submitted yet. Use the chat above to create one.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate User Stories -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Generate User Stories</h2>
+        <button class="btn btn-primary btn-small" id="btn-generate-all" onclick="generateAllStories()">Generate from All Requirements</button>
+      </div>
+      <div class="panel-body">
+        <div class="hint" style="margin-bottom:10px">Use AI to automatically generate user stories from your requirements. You can generate from all requirements at once, or per-requirement using the button next to each requirement above.</div>
+        <div id="gen-status" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Review Generated Stories -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Review Generated Stories</h2>
+        <span class="badge" id="pending-count">0</span>
+      </div>
+      <div class="panel-body">
+        <div id="pending-stories">
+          <div class="hint">No stories pending review. Generate stories from your requirements above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accepted Stories (collapsible) -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="row" style="cursor:pointer;flex:1" onclick="toggleAccepted()">
+          <h2>Accepted Stories</h2>
+          <div class="row">
+            <span class="badge" id="accepted-count">0</span>
+            <span id="accepted-toggle-icon" style="font-size:18px;color:var(--muted);transition:transform .2s ease">&#9660;</span>
+          </div>
+        </div>
+        <div class="row" style="gap:8px;margin-left:12px">
+          <button class="btn btn-secondary" onclick="exportStories('csv')" title="Export as CSV (Jira-compatible)">&#8595; CSV</button>
+          <button class="btn btn-secondary" onclick="exportStories('json')" title="Export as JSON">&#8595; JSON</button>
+        </div>
+      </div>
+      <div class="panel-body" id="accepted-stories" style="display:none">
+        <div class="hint">No accepted stories yet.</div>
+      </div>
+    </div>
+
+    <!-- Relevant documents (collapsible dropdown) -->
+    <div class="panel">
+      <div class="panel-header" style="cursor:pointer" onclick="toggleDocs()">
+        <h2>Relevant Documents</h2>
+        <span id="docs-toggle-icon" style="font-size:18px;color:var(--muted);transition:transform .2s ease">&#9660;</span>
+      </div>
+      <div class="panel-body" id="relevant-docs" style="display:none">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const TOKEN = window.location.pathname.split('/dashboard/')[1];
+    let dashboardData = null;
+    let chatMessages = []; // {role, content} array sent to server
+    let draftRequirement = null;
+    let chatFinished = false;
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function toast(msg){
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2400);
+    }
+
+    // ---- Documents dropdown toggle ----
+    function toggleDocs(){
+      const body = document.getElementById("relevant-docs");
+      const icon = document.getElementById("docs-toggle-icon");
+      if(body.style.display === "none"){
+        body.style.display = "block";
+        icon.style.transform = "rotate(180deg)";
+      } else {
+        body.style.display = "none";
+        icon.style.transform = "rotate(0deg)";
+      }
+    }
+
+    // ---- Load dashboard data ----
+    async function loadDashboard(){
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}`);
+        if(!r.ok){
+          document.getElementById("project-overview").innerHTML =
+            `<div class="hint" style="color:var(--bad)">Invalid or expired dashboard link.</div>`;
+          return;
+        }
+        dashboardData = await r.json();
+        renderDashboard();
+      } catch(e){
+        console.error(e);
+        document.getElementById("project-overview").innerHTML =
+          `<div class="hint" style="color:var(--bad)">Failed to load dashboard data.</div>`;
+      }
+    }
+
+    function renderDashboard(){
+      const d = dashboardData;
+      const s = d.stakeholder;
+      const p = d.project;
+
+      // Top badge
+      document.getElementById("stakeholder-badge").textContent = `${s.name} (${s.role})`;
+
+      // Project overview
+      document.getElementById("project-overview").innerHTML = `
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">${escapeHtml(p.name)}</div>
+        <div class="hint">${escapeHtml(p.description || "")}</div>
+        <div class="hint" style="margin-top:8px">
+          <b>Domain:</b> ${escapeHtml(p.domain || "N/A")} &nbsp;|&nbsp;
+          <b>Regulatory:</b> ${escapeHtml((p.regulatory_exposure || []).join(", ") || "None")}
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div class="hint"><b>Your role:</b> ${escapeHtml(s.role)} (${escapeHtml(s.type)})</div>
+          ${s.responsibilities.length ? `<div class="hint"><b>Responsibilities:</b> ${escapeHtml(s.responsibilities.join(", "))}</div>` : ""}
+          ${s.concerns.length ? `<div class="hint"><b>Key concerns:</b> ${escapeHtml(s.concerns.join(", "))}</div>` : ""}
+        </div>
+      `;
+
+      // Relevant docs
+      const docsEl = document.getElementById("relevant-docs");
+      if(d.relevant_doc_summaries && d.relevant_doc_summaries.length){
+        docsEl.innerHTML = d.relevant_doc_summaries.map(doc => `
+          <div class="doc-item">
+            <p class="doc-name">${escapeHtml(doc.filename)}</p>
+            <span class="pill">${escapeHtml(doc.classification)}</span>
+            ${doc.preview ? `<div class="doc-preview">${escapeHtml(doc.preview)}</div>` : ""}
+          </div>
+        `).join("");
+      } else {
+        docsEl.innerHTML = `<div class="hint">No relevant documents assigned to your profile.</div>`;
+      }
+
+      // My requirements
+      renderMyRequirements(d.my_requirements || []);
+
+      // Story sections
+      renderPendingStories(d.pending_stories || []);
+      renderAcceptedStories(d.accepted_stories || []);
+    }
+
+    function renderMyRequirements(reqs){
+      const el = document.getElementById("my-requirements");
+      document.getElementById("req-count").textContent = reqs.length;
+      if(!reqs.length){
+        el.innerHTML = `<div class="hint">No requirements submitted yet. Use the chat above or "Add Manually" to create one.</div>`;
+        return;
+      }
+      el.innerHTML = reqs.map(r => {
+        const hasDups = r.metadata && r.metadata.potential_duplicates && r.metadata.potential_duplicates.length;
+        return `
+          <div class="req-item">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <p class="req-title">${escapeHtml(r.title)}</p>
+              <div class="row" style="flex-shrink:0">
+                <button class="btn btn-ghost btn-small" onclick="generateStoriesForReq(${r.id})" title="Generate user stories from this requirement">Generate</button>
+                <button class="btn btn-ghost btn-small" onclick="editRequirement(${r.id})">Edit</button>
+                <button class="btn btn-danger btn-small" onclick="deleteRequirement(${r.id})">Delete</button>
+              </div>
+            </div>
+            <p class="req-desc">${escapeHtml(r.description)}</p>
+            <div class="row" style="margin-top:6px;flex-wrap:wrap">
+              <span class="pill">${escapeHtml(r.category)}</span>
+              <span class="pill">${escapeHtml(r.priority)}</span>
+              ${r.regulatory_mandate ? '<span class="pill" style="color:var(--primary);border-color:rgba(58,68,93,.2)">Regulatory</span>' : ''}
+              ${hasDups ? '<span class="pill" style="color:var(--primary);border-color:rgba(58,68,93,.2)">Potential duplicate</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ---- Manual requirement CRUD ----
+    let editingReqId = null;
+
+    function toggleManualForm(){
+      const form = document.getElementById("manual-form");
+      if(form.style.display === "none"){
+        form.style.display = "block";
+        if(!editingReqId){
+          // Reset for "Add" mode
+          document.getElementById("manual-form-title").textContent = "Add requirement";
+          document.getElementById("manual-submit-btn").textContent = "Add";
+          document.getElementById("manual-title").value = "";
+          document.getElementById("manual-desc").value = "";
+          document.getElementById("manual-category").value = "functional";
+          document.getElementById("manual-priority").value = "Must Have";
+        }
+      } else {
+        form.style.display = "none";
+        editingReqId = null;
+      }
+    }
+
+    function editRequirement(reqId){
+      const reqs = (dashboardData && dashboardData.my_requirements) || [];
+      const req = reqs.find(r => r.id === reqId);
+      if(!req) return;
+
+      editingReqId = reqId;
+      document.getElementById("manual-form-title").textContent = "Edit requirement";
+      document.getElementById("manual-submit-btn").textContent = "Save";
+      document.getElementById("manual-title").value = req.title;
+      document.getElementById("manual-desc").value = req.description;
+      document.getElementById("manual-category").value = req.category || "functional";
+      document.getElementById("manual-priority").value = req.priority || "Must Have";
+      document.getElementById("manual-form").style.display = "block";
+      document.getElementById("manual-form").scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+
+    async function submitManualRequirement(){
+      const payload = {
+        title: document.getElementById("manual-title").value.trim(),
+        description: document.getElementById("manual-desc").value.trim(),
+        category: document.getElementById("manual-category").value,
+        priority: document.getElementById("manual-priority").value,
+        regulatory_mandate: false,
+        regulatory_references: [],
+      };
+
+      if(!payload.title || !payload.description){
+        toast("Title and description are required");
+        return;
+      }
+
+      try {
+        let r;
+        if(editingReqId){
+          // Update existing
+          r = await fetch(`/api/dashboard/${TOKEN}/requirements/${editingReqId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          // Create new
+          r = await fetch(`/api/dashboard/${TOKEN}/requirements`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        if(!r.ok){
+          toast(editingReqId ? "Failed to update requirement" : "Failed to add requirement");
+          return;
+        }
+
+        toast(editingReqId ? "Requirement updated!" : "Requirement added!");
+        editingReqId = null;
+        document.getElementById("manual-form").style.display = "none";
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        toast("Error saving requirement");
+      }
+    }
+
+    async function deleteRequirement(reqId){
+      if(!confirm("Delete this requirement?")) return;
+
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/requirements/${reqId}`, {
+          method: "DELETE",
+        });
+        if(!r.ok){
+          toast("Failed to delete requirement");
+          return;
+        }
+        toast("Requirement deleted");
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        toast("Error deleting requirement");
+      }
+    }
+
+    // ---- Story Generation + Review ----
+
+    async function generateAllStories(){
+      const reqs = (dashboardData && dashboardData.my_requirements) || [];
+      if(!reqs.length){
+        toast("No requirements to generate stories from");
+        return;
+      }
+      const ids = reqs.map(r => r.id);
+      await doGenerateStories(ids);
+    }
+
+    async function generateStoriesForReq(reqId){
+      await doGenerateStories([reqId]);
+    }
+
+    async function doGenerateStories(requirementIds){
+      const statusEl = document.getElementById("gen-status");
+      const btn = document.getElementById("btn-generate-all");
+      statusEl.style.display = "block";
+      statusEl.innerHTML = `<div class="hint" style="color:var(--teal);font-weight:700">Generating user stories... This may take a moment.</div>`;
+      btn.disabled = true;
+
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/generate-stories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requirement_ids: requirementIds }),
+        });
+
+        if(!r.ok){
+          const err = await r.text();
+          statusEl.innerHTML = `<div class="hint" style="color:var(--bad)">Generation failed: ${escapeHtml(err)}</div>`;
+          btn.disabled = false;
+          return;
+        }
+
+        const data = await r.json();
+        statusEl.innerHTML = `<div class="hint" style="color:var(--good);font-weight:700">Generated ${data.total_generated} user stories!</div>`;
+        toast(`Generated ${data.total_generated} stories`);
+        btn.disabled = false;
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        statusEl.innerHTML = `<div class="hint" style="color:var(--bad)">Network error during generation.</div>`;
+        btn.disabled = false;
+      }
+    }
+
+    async function acceptStory(storyId){
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/user-stories/${storyId}/accept`, { method: "POST" });
+        if(!r.ok){ toast("Failed to accept story"); return; }
+        toast("Story accepted!");
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        toast("Error accepting story");
+      }
+    }
+
+    async function rejectStory(storyId){
+      if(!confirm("Reject this story?")) return;
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/user-stories/${storyId}/reject`, { method: "POST" });
+        if(!r.ok){ toast("Failed to reject story"); return; }
+        toast("Story rejected");
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        toast("Error rejecting story");
+      }
+    }
+
+    let editingStoryId = null;
+
+    function editStoryInline(storyId){
+      const allStories = (dashboardData && dashboardData.pending_stories) || [];
+      const story = allStories.find(s => s.id === storyId);
+      if(!story) return;
+
+      editingStoryId = storyId;
+      const card = document.getElementById(`story-card-${storyId}`);
+      if(!card) return;
+
+      card.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div><label>Title</label><input id="edit-story-title-${storyId}" value="${escapeHtml(story.title)}" /></div>
+          <div><label>Description</label><textarea id="edit-story-desc-${storyId}">${escapeHtml(story.description)}</textarea></div>
+          <div><label>Acceptance Criteria</label><textarea id="edit-story-ac-${storyId}" style="min-height:60px">${escapeHtml(story.acceptance_criteria || '')}</textarea></div>
+          <div class="split">
+            <div>
+              <label>Category</label>
+              <select id="edit-story-cat-${storyId}">
+                <option value="functional" ${story.category==='functional'?'selected':''}>functional</option>
+                <option value="non_functional" ${story.category==='non_functional'?'selected':''}>non_functional</option>
+                <option value="compliance" ${story.category==='compliance'?'selected':''}>compliance</option>
+                <option value="security" ${story.category==='security'?'selected':''}>security</option>
+                <option value="performance" ${story.category==='performance'?'selected':''}>performance</option>
+              </select>
+            </div>
+            <div>
+              <label>Priority</label>
+              <select id="edit-story-pri-${storyId}">
+                <option value="Must Have" ${story.priority==='Must Have'?'selected':''}>Must Have</option>
+                <option value="Should Have" ${story.priority==='Should Have'?'selected':''}>Should Have</option>
+                <option value="Could Have" ${story.priority==='Could Have'?'selected':''}>Could Have</option>
+                <option value="Won't Have" ${story.priority==="Won't Have"?'selected':''}>Won't Have</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary btn-small" onclick="saveAndAcceptStory(${storyId})">Save &amp; Accept</button>
+            <button class="btn btn-ghost btn-small" onclick="loadDashboard()">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function saveAndAcceptStory(storyId){
+      const payload = {
+        title: document.getElementById(`edit-story-title-${storyId}`).value.trim(),
+        description: document.getElementById(`edit-story-desc-${storyId}`).value.trim(),
+        acceptance_criteria: document.getElementById(`edit-story-ac-${storyId}`).value.trim(),
+        category: document.getElementById(`edit-story-cat-${storyId}`).value,
+        priority: document.getElementById(`edit-story-pri-${storyId}`).value,
+      };
+
+      if(!payload.title || !payload.description){
+        toast("Title and description are required");
+        return;
+      }
+
+      try {
+        // Update story
+        let r = await fetch(`/api/dashboard/${TOKEN}/user-stories/${storyId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if(!r.ok){ toast("Failed to update story"); return; }
+
+        // Then accept
+        r = await fetch(`/api/dashboard/${TOKEN}/user-stories/${storyId}/accept`, { method: "POST" });
+        if(!r.ok){ toast("Failed to accept story"); return; }
+
+        toast("Story updated and accepted!");
+        editingStoryId = null;
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        toast("Error saving story");
+      }
+    }
+
+    function toggleAccepted(){
+      const body = document.getElementById("accepted-stories");
+      const icon = document.getElementById("accepted-toggle-icon");
+      if(body.style.display === "none"){
+        body.style.display = "block";
+        icon.style.transform = "rotate(180deg)";
+      } else {
+        body.style.display = "none";
+        icon.style.transform = "rotate(0deg)";
+      }
+    }
+
+    function renderPendingStories(stories){
+      const el = document.getElementById("pending-stories");
+      document.getElementById("pending-count").textContent = stories.length;
+      if(!stories.length){
+        el.innerHTML = `<div class="hint">No stories pending review. Generate stories from your requirements above.</div>`;
+        return;
+      }
+
+      // Find requirement titles for linking
+      const reqs = (dashboardData && dashboardData.my_requirements) || [];
+      const reqMap = {};
+      reqs.forEach(r => { reqMap[r.id] = r.title; });
+
+      el.innerHTML = stories.map(s => `
+        <div class="req-item" id="story-card-${s.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <p class="req-title">${escapeHtml(s.title)}</p>
+            <div class="row" style="flex-shrink:0">
+              <button class="btn btn-primary btn-small" style="background:var(--good)" onclick="acceptStory(${s.id})">Accept</button>
+              <button class="btn btn-ghost btn-small" onclick="editStoryInline(${s.id})">Edit</button>
+              <button class="btn btn-danger btn-small" onclick="rejectStory(${s.id})">Reject</button>
+            </div>
+          </div>
+          <p class="req-desc">${escapeHtml(s.description)}</p>
+          ${s.acceptance_criteria ? `<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(117,176,156,.06);border:1px solid rgba(117,176,156,.2);font-size:13px;line-height:1.5;white-space:pre-wrap"><b>Acceptance Criteria:</b>\n${escapeHtml(s.acceptance_criteria)}</div>` : ''}
+          <div class="row" style="margin-top:6px;flex-wrap:wrap">
+            <span class="pill">${escapeHtml(s.category)}</span>
+            <span class="pill">${escapeHtml(s.priority)}</span>
+            ${s.requirement_id && reqMap[s.requirement_id] ? `<span class="pill" style="color:var(--primary);border-color:rgba(58,68,93,.2)">From: ${escapeHtml(reqMap[s.requirement_id])}</span>` : ''}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderAcceptedStories(stories){
+      const el = document.getElementById("accepted-stories");
+      document.getElementById("accepted-count").textContent = stories.length;
+      if(!stories.length){
+        el.innerHTML = `<div class="hint">No accepted stories yet.</div>`;
+        return;
+      }
+
+      const reqs = (dashboardData && dashboardData.my_requirements) || [];
+      const reqMap = {};
+      reqs.forEach(r => { reqMap[r.id] = r.title; });
+
+      el.innerHTML = stories.map(s => `
+        <div class="req-item">
+          <p class="req-title">${escapeHtml(s.title)}</p>
+          <p class="req-desc">${escapeHtml(s.description)}</p>
+          ${s.acceptance_criteria ? `<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(117,176,156,.06);border:1px solid rgba(117,176,156,.2);font-size:13px;line-height:1.5;white-space:pre-wrap"><b>AC:</b> ${escapeHtml(s.acceptance_criteria)}</div>` : ''}
+          <div class="row" style="margin-top:6px;flex-wrap:wrap">
+            <span class="pill">${escapeHtml(s.category)}</span>
+            <span class="pill">${escapeHtml(s.priority)}</span>
+            <span class="pill" style="color:var(--good);border-color:rgba(93,154,132,.3)">Accepted</span>
+            ${s.requirement_id && reqMap[s.requirement_id] ? `<span class="pill">From: ${escapeHtml(reqMap[s.requirement_id])}</span>` : ''}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function exportStories(format){
+      const url = `/api/dashboard/${TOKEN}/user-stories/export?format=${format}`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // ---- Chat ----
+    function resetChat(){
+      chatMessages = [];
+      chatFinished = false;
+      draftRequirement = null;
+      document.getElementById("draft-area").style.display = "none";
+      document.getElementById("dup-notice").style.display = "none";
+      document.getElementById("chat-input").disabled = false;
+      document.getElementById("btn-send").disabled = false;
+      const area = document.getElementById("chat-area");
+      area.innerHTML = `<div class="chat-msg system">Hi! I'll help you articulate your requirements. Tell me about a need or problem you'd like to address.</div>`;
+    }
+
+    function appendChatMsg(role, content){
+      const area = document.getElementById("chat-area");
+      const div = document.createElement("div");
+      div.className = `chat-msg ${role}`;
+      div.textContent = content;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function appendThinking(){
+      const area = document.getElementById("chat-area");
+      const div = document.createElement("div");
+      div.className = "chat-msg system thinking";
+      div.textContent = "Thinking";
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    async function sendChat(){
+      if(chatFinished) return;
+
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if(!text) return;
+
+      input.value = "";
+      input.disabled = true;
+      document.getElementById("btn-send").disabled = true;
+
+      // Add user message
+      chatMessages.push({ role: "user", content: text });
+      appendChatMsg("user", text);
+      appendThinking();
+
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: chatMessages }),
+        });
+
+        // Remove "Thinking..."
+        const area = document.getElementById("chat-area");
+        const lastChild = area.lastElementChild;
+        if(lastChild && lastChild.classList.contains("thinking")) area.removeChild(lastChild);
+
+        if(!r.ok){
+          const errText = await r.text();
+          appendChatMsg("system", "Error: could not reach AI assistant. Please try again.");
+          console.error(errText);
+          input.disabled = false;
+          document.getElementById("btn-send").disabled = false;
+          return;
+        }
+
+        const data = await r.json();
+        chatMessages.push({ role: "assistant", content: data.reply });
+        appendChatMsg("assistant", data.reply);
+
+        if(data.finished && data.draft_requirement){
+          chatFinished = true;
+          draftRequirement = data.draft_requirement;
+          showDraft(data.draft_requirement);
+          input.disabled = true;
+          document.getElementById("btn-send").disabled = true;
+        } else {
+          input.disabled = false;
+          document.getElementById("btn-send").disabled = false;
+          input.focus();
+        }
+      } catch(e){
+        console.error(e);
+        const area = document.getElementById("chat-area");
+        const lastChild = area.lastElementChild;
+        if(lastChild && lastChild.classList.contains("thinking")) area.removeChild(lastChild);
+        appendChatMsg("system", "Network error. Please try again.");
+        input.disabled = false;
+        document.getElementById("btn-send").disabled = false;
+      }
+    }
+
+    function showDraft(draft){
+      document.getElementById("draft-title").value = draft.title || "";
+      document.getElementById("draft-desc").value = draft.description || "";
+      document.getElementById("draft-category").value = draft.category || "functional";
+      document.getElementById("draft-priority").value = draft.priority || "Must Have";
+      document.getElementById("draft-area").style.display = "block";
+
+      // Scroll to draft
+      document.getElementById("draft-area").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function editDraft(){
+      // Allow the user to keep editing in chat
+      chatFinished = false;
+      document.getElementById("chat-input").disabled = false;
+      document.getElementById("btn-send").disabled = false;
+      document.getElementById("draft-area").style.display = "none";
+      appendChatMsg("system", "You can continue the conversation to refine your requirement. When ready, I'll generate an updated draft.");
+      document.getElementById("chat-input").focus();
+    }
+
+    async function submitRequirement(){
+      const payload = {
+        title: document.getElementById("draft-title").value.trim(),
+        description: document.getElementById("draft-desc").value.trim(),
+        category: document.getElementById("draft-category").value,
+        priority: document.getElementById("draft-priority").value,
+        regulatory_mandate: draftRequirement ? (draftRequirement.regulatory_mandate || false) : false,
+        regulatory_references: draftRequirement ? (draftRequirement.regulatory_references || []) : [],
+      };
+
+      if(!payload.title || !payload.description){
+        toast("Title and description are required");
+        return;
+      }
+
+      try {
+        const r = await fetch(`/api/dashboard/${TOKEN}/requirements`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if(!r.ok){
+          toast("Failed to submit requirement");
+          return;
+        }
+
+        const data = await r.json();
+        toast("Requirement submitted successfully!");
+
+        // Show duplicate notice if any
+        if(data.potential_duplicates && data.potential_duplicates.length){
+          const dupEl = document.getElementById("dup-notice");
+          dupEl.style.display = "block";
+          dupEl.innerHTML = `
+            <div class="dup-notice">
+              <b>Note:</b> Similar requirements were found:
+              ${data.potential_duplicates.map(d => `
+                <div style="margin-top:6px">
+                  <b>${escapeHtml(d.title)}</b> (${Math.round(d.similarity * 100)}% similar)
+                  <div class="hint">${escapeHtml(d.content_preview)}</div>
+                </div>
+              `).join("")}
+              <div class="hint" style="margin-top:6px">This is informational only — your requirement has been submitted.</div>
+            </div>
+          `;
+        }
+
+        // Refresh requirements list
+        await loadDashboard();
+
+        // Update chat area
+        appendChatMsg("system", "Requirement submitted! You can start a new chat to submit another requirement.");
+      } catch(e){
+        console.error(e);
+        toast("Error submitting requirement");
+      }
+    }
+
+    // ---- Init ----
+    (async function init(){
+      if(!TOKEN){
+        document.getElementById("project-overview").innerHTML =
+          `<div class="hint" style="color:var(--bad)">No dashboard token found in URL.</div>`;
+        return;
+      }
+      await loadDashboard();
+    })();
+  </script>
+</body>
+</html>
