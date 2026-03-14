@@ -254,6 +254,7 @@ class QwenLocal:
         max_tokens: int,
     ) -> Dict[str, Any]:
         self._load()
+        assert self._pipe is not None
         messages = [
             {
                 "role": "system",
