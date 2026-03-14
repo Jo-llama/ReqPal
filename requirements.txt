@@ -14,8 +14,7 @@ numpy>=1.26.4
 torch>=2.2.0
 
 # Local LLM - Qwen via LitGPT (Lightning AI native)
-litgpt[all]
-litserve
+litgpt
 
 # Document Processing
 pypdf>=4.0.0
