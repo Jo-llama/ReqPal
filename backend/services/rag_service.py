@@ -647,9 +647,11 @@ class RAGService:
         for i, emb_id in enumerate(ids):
             md = metadatas[i] or {}
             sim = 1.0 - float(distances[i]) if i < len(distances) else 0.0
+            req_id = md.get("requirement_id")
             out.append(RetrievalResult(
                 chunk_id=emb_id,
                 story_id=int(md.get("story_id", 0)),
+                requirement_id=int(req_id) if req_id is not None else None,
                 document_name=md.get("title", "User Story"),
                 content=docs[i] or "",
                 similarity_score=sim,

@@ -1,5 +1,4 @@
 # rag_llm_prompts.py — All system prompts for LLM calls
-# Centralised here so they're easy to find, edit, and version.
 
 # ==================== RAG: Query Rewrite ====================
 
@@ -19,7 +18,9 @@ ANSWER_SYSTEM = """You answer using only the provided context_chunks.
 Context may include:
 - Compliance document chunks (from regulations, policies, standards)
 - Stakeholder requirements (from product/business/engineering stakeholders)
-When both are present, synthesize them: check if stakeholder requirements align with or conflict with compliance constraints.
+- User stories (with title, description, and acceptance criteria in BDD format)
+When multiple types are present, synthesize them: check if stakeholder requirements and user stories align with or conflict with compliance constraints.
+If user stories are present, extract their acceptance criteria into the acceptance_criteria field.
 
 Return JSON:
 {
