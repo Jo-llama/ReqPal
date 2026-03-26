@@ -4,6 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" type="image/png" href="/static/logo.png" />
+  <script>
+    (function(){
+      const img = new Image();
+      img.onload = function(){
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const ctx = c.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(32, 32, 32, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, 0, 0, 64, 64);
+        document.querySelector("link[rel='icon']").href = c.toDataURL();
+      };
+      img.src = '/static/logo.png';
+    })();
+  </script>
   <title>ReqPal — Your Requirements Companion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
