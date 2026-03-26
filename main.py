@@ -26,7 +26,10 @@ from typing import List as TList
 import json
 import csv as csv_module
 import uuid
+import time
 from io import StringIO
+
+from backend.services.observability import get_langfuse
 
 from models import (
     Project,
@@ -364,9 +367,19 @@ async def rag_answer(req: RAGAnswerRequest):
     rewritten_query = req.query
     r = get_router()
 
+    # Langfuse root trace for this request
+    lf = get_langfuse()
+    lf_trace = lf.trace(
+        name="rag_answer",
+        input={"query": req.query, "project_id": req.project_id, "top_k": req.top_k},
+        user_id=str(req.project_id),
+        tags=["rag", project.name],
+    ) if lf else None
+
     # 1) Rewrite (best-effort)
     if r:
         try:
+            _t0 = time.perf_counter()
             rewrite_json, provider, _trace = await r.chat_json(
                 system=QUERY_REWRITE_SYSTEM,
                 user_payload={"project_context": project_ctx, "question": req.query},
@@ -377,6 +390,14 @@ async def rag_answer(req: RAGAnswerRequest):
             )
             rewritten_query = (rewrite_json.get("rewritten_query") or req.query).strip()
             llm_trace_parts.append(f"rewrite:ok({provider})")
+            if lf_trace:
+                lf_trace.generation(
+                    name="query_rewrite",
+                    model=provider,
+                    input=req.query,
+                    output=rewritten_query,
+                    metadata={"latency_ms": round((time.perf_counter() - _t0) * 1000, 1)},
+                )
         except Exception as e:
             msg = str(e)
             if len(msg) > 120: msg = msg[:120] + "…"
@@ -385,6 +406,7 @@ async def rag_answer(req: RAGAnswerRequest):
         llm_trace_parts.append("rewrite:skip(no_router)")
 
     # 2) Retrieve + rerank (multi-collection)
+    _t0 = time.perf_counter()
     selected = await rag_service.retrieve_and_rerank(
         query=rewritten_query,
         project_id=req.project_id,
@@ -403,7 +425,22 @@ async def rag_answer(req: RAGAnswerRequest):
             top_k=req.top_k,
         )
 
+    if lf_trace:
+        lf_trace.span(
+            name="retrieval",
+            input=rewritten_query,
+            output={"count": len(selected), "chunks": [
+                {"chunk_id": c.chunk_id, "doc": c.document_name,
+                 "score": round(c.similarity_score, 3), "collection": c.source_collection.value if c.source_collection else None}
+                for c in selected
+            ]},
+            metadata={"latency_ms": round((time.perf_counter() - _t0) * 1000, 1)},
+        )
+
     if not selected:
+        if lf_trace:
+            lf_trace.update(output={"answer": "No relevant context found"}, level="WARNING")
+            lf.flush()
         return {
             "answer": ["No relevant context found in indexed documents."],
             "acceptance_criteria": [],
@@ -444,6 +481,7 @@ async def rag_answer(req: RAGAnswerRequest):
                 for c in llm_chunks
             ]
 
+            _t0 = time.perf_counter()
             ans_json, provider, _trace = await r.chat_json(
                 system=ANSWER_SYSTEM,
                 user_payload={
@@ -478,6 +516,14 @@ async def rag_answer(req: RAGAnswerRequest):
                     }
 
             llm_trace_parts.append(f"answer:ok({provider})")
+            if lf_trace:
+                lf_trace.generation(
+                    name="answer_generation",
+                    model=provider,
+                    input=context_chunks,
+                    output=answer_payload,
+                    metadata={"latency_ms": round((time.perf_counter() - _t0) * 1000, 1)},
+                )
         except Exception as e:
             msg = str(e)
             if len(msg) > 120: msg = msg[:120] + "…"
@@ -485,7 +531,7 @@ async def rag_answer(req: RAGAnswerRequest):
     else:
         llm_trace_parts.append("answer:skip(no_router)")
 
-    return {
+    response = {
         "answer": answer_payload.get("answer", []),
         "acceptance_criteria": answer_payload.get("acceptance_criteria", []),
         "edge_cases": answer_payload.get("edge_cases", []),
@@ -512,6 +558,12 @@ async def rag_answer(req: RAGAnswerRequest):
         "rewritten_query": rewritten_query,
         "llm_trace": " ".join(llm_trace_parts),
     }
+
+    if lf_trace:
+        lf_trace.update(output={"answer": answer_payload.get("answer"), "llm_trace": " ".join(llm_trace_parts)})
+        lf.flush()
+
+    return response
 
 
 # ----------------------------
@@ -963,7 +1015,16 @@ async def dashboard_chat(token: str, req: DashboardChatRequest):
     for m in req.messages:
         conversation.append({"role": m.role, "content": m.content})
 
+    lf = get_langfuse()
+    lf_trace = lf.trace(
+        name="dashboard_agent",
+        input={"messages": len(req.messages), "stakeholder": s.name, "project": p.name},
+        user_id=str(p.id),
+        tags=["dashboard", "agent", p.name],
+    ) if lf else None
+
     try:
+        _t0 = time.perf_counter()
         result_json, provider, _trace = await r.chat_json(
             system=system_prompt,
             user_payload={"conversation": conversation},
@@ -973,6 +1034,18 @@ async def dashboard_chat(token: str, req: DashboardChatRequest):
             retries=1,
         )
 
+        if lf_trace:
+            lf_trace.generation(
+                name="agent_turn",
+                model=provider,
+                input=conversation,
+                output=result_json,
+                metadata={"latency_ms": round((time.perf_counter() - _t0) * 1000, 1),
+                          "finished": result_json.get("finished", False)},
+            )
+            lf_trace.update(output={"reply": result_json.get("reply"), "finished": result_json.get("finished")})
+            lf.flush()
+
         return DashboardChatResponse(
             reply=result_json.get("reply", "I'm sorry, I couldn't process that. Could you try again?"),
             finished=result_json.get("finished", False),
@@ -980,6 +1053,9 @@ async def dashboard_chat(token: str, req: DashboardChatRequest):
         )
     except Exception as e:
         print(f"Dashboard chat error: {e}")
+        if lf_trace:
+            lf_trace.update(level="ERROR", status_message=str(e)[:200])
+            lf.flush()
         raise HTTPException(503, f"LLM call failed: {str(e)[:200]}")
 
 @app.post("/api/dashboard/{token}/requirements")
