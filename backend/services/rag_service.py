@@ -500,7 +500,8 @@ class RAGService:
         Multi-collection retrieval.
         - "compliance": only compliance_documents collection
         - "requirements": only stakeholder_requirements collection
-        - "all": query both, merge, sort by similarity
+        - "stories": only user_stories collection
+        - "all": query all three, merge, sort by similarity
         """
         q_emb = self.embedding_model.encode(
             [query], normalize_embeddings=True
@@ -516,6 +517,11 @@ class RAGService:
         if retrieval_mode in ("all", "requirements"):
             results.extend(
                 self._query_requirements(q_emb, project_id, top_k)
+            )
+
+        if retrieval_mode in ("all", "stories"):
+            results.extend(
+                self._query_stories(q_emb, project_id, top_k)
             )
 
         results.sort(key=lambda r: r.similarity_score, reverse=True)
@@ -568,6 +574,24 @@ class RAGService:
 
         return self._parse_requirements_results(raw)
 
+    def _query_stories(
+        self,
+        q_emb: list,
+        project_id: int,
+        top_k: int,
+    ) -> List[RetrievalResult]:
+        try:
+            raw = self.stories_collection.query(
+                query_embeddings=[q_emb],
+                n_results=top_k,
+                where={"project_id": int(project_id)},
+            )
+        except Exception as e:
+            print(f"Warning: stories query failed: {e}")
+            return []
+
+        return self._parse_stories_results(raw)
+
     def _parse_compliance_results(self, raw: dict) -> List[RetrievalResult]:
         ids = raw["ids"][0] if raw.get("ids") else []
         metadatas = raw["metadatas"][0] if raw.get("metadatas") else []
@@ -609,6 +633,27 @@ class RAGService:
                 similarity_score=sim,
                 source_collection=CollectionName.REQUIREMENTS,
                 stakeholder_role=md.get("stakeholder_role"),
+                category=md.get("category"),
+            ))
+        return out
+
+    def _parse_stories_results(self, raw: dict) -> List[RetrievalResult]:
+        ids = raw["ids"][0] if raw.get("ids") else []
+        metadatas = raw["metadatas"][0] if raw.get("metadatas") else []
+        docs = raw["documents"][0] if raw.get("documents") else []
+        distances = raw["distances"][0] if raw.get("distances") else []
+
+        out = []
+        for i, emb_id in enumerate(ids):
+            md = metadatas[i] or {}
+            sim = 1.0 - float(distances[i]) if i < len(distances) else 0.0
+            out.append(RetrievalResult(
+                chunk_id=emb_id,
+                story_id=int(md.get("story_id", 0)),
+                document_name=md.get("title", "User Story"),
+                content=docs[i] or "",
+                similarity_score=sim,
+                source_collection=CollectionName.USER_STORIES,
                 category=md.get("category"),
             ))
         return out
