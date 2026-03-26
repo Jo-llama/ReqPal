@@ -1296,7 +1296,7 @@
                 ${s.concerns && s.concerns.length ? `<div class="item-sub">Concerns: ${escapeHtml(s.concerns.join(", "))}</div>` : ""}
               </div>
               <div class="row">
-                <button class="btn btn-ghost btn-small" onclick="copyLink('${escapeHtml(dashUrl)}')">Copy Link</button>
+                <button class="btn btn-ghost btn-small" onclick="window.open('${escapeHtml(dashUrl)}', '_blank')">Open Dashboard</button>
                 <button class="btn btn-danger btn-small" onclick="deleteStakeholder(${s.id})">Delete</button>
               </div>
             </div>
@@ -1305,9 +1305,6 @@
       }).join("");
     }
 
-    function copyLink(url){
-      navigator.clipboard.writeText(url).then(() => toast("Dashboard link copied!"));
-    }
 
     async function deleteStakeholder(id){
       if(!confirm("Delete this stakeholder?")) return;
