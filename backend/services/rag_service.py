@@ -1,4 +1,5 @@
 import hashlib
+import math
 import json
 import csv
 from pathlib import Path
@@ -667,7 +668,7 @@ class RAGService:
         for item, score in reranked:
             original = result_map.get(item.chunk_id)
             if original:
-                original.similarity_score = score
+                original.similarity_score = 1.0 / (1.0 + math.exp(-score))
                 out.append(original)
 
         return out
