@@ -838,6 +838,17 @@
       return Math.max(0, Math.min(1, v));
     }
     function percent(sim){ return Math.round(clamp01(sim) * 100); }
+    function formatStatus(s){
+      const map = {
+        ai_generated:    "AI Generated",
+        pending_review:  "Pending Review",
+        accepted:        "Accepted",
+        rejected:        "Rejected",
+        pm_validated:    "PM Validated",
+        manual:          "Manual",
+      };
+      return map[s] || s;
+    }
 
     function scoreClass(sim){
       const s = clamp01(sim);
@@ -1645,8 +1656,8 @@
                   </p>
                 </div>
                 <div class="row" style="flex-wrap:wrap;gap:6px">
-                  <span class="status-badge ${escapeHtml(statusClass)}">${escapeHtml(s.status)}</span>
-                  ${isValidated ? '<span class="status-badge pm_validated">PM Validated</span>' : ''}
+                  <span class="status-badge ${escapeHtml(statusClass)}">${formatStatus(s.status)}</span>
+                  ${isValidated && s.status !== 'pm_validated' ? '<span class="status-badge pm_validated">PM Validated</span>' : ''}
                   ${s.stakeholder_validated ? '<span class="status-badge accepted" style="font-size:10px">Stakeholder OK</span>' : ''}
                   ${canValidate ? `<button class="btn btn-primary btn-small" style="padding:4px 8px;font-size:12px" onclick="validatePmStory(${s.id})">Validate</button>` : ''}
                   <button class="btn btn-ghost btn-small" style="padding:4px 8px;font-size:12px" onclick="editPmStory(${s.id})">Edit</button>
