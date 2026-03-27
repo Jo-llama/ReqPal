@@ -40,6 +40,36 @@ Documents → RAG → Stakeholder Chat → Requirements → AI User Stories → 
 - Three ChromaDB collections: compliance documents, stakeholder requirements, user stories
 - Query rewriting + domain-aware terminology enrichment
 
+### Observability (Langfuse)
+
+ReqPal integrates with [Langfuse](https://langfuse.com) to trace every RAG request and AI agent interaction.
+
+**What is traced:**
+
+| Trace | Spans captured |
+|---|---|
+| `rag_answer` | query rewrite → retrieval (chunk scores, collections) → answer generation |
+| `dashboard_agent` | each agent turn (model, latency, conversation, draft requirement) |
+
+**Setup** (optional — app works fine without it):
+
+1. Create a free account at [cloud.langfuse.com](https://cloud.langfuse.com)
+2. Go to your project → **Settings → API Keys**
+3. Add to `.env`:
+
+```env
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+4. Install: `pip install "langfuse>=2.0.0,<3.0.0"`
+5. Restart the server — look for `[Langfuse] Connected` in the logs
+
+Traces appear in Langfuse → **Tracing** within seconds of each request.
+
+---
+
 ### LLM Providers (cascading fallback)
 
 | Priority | Provider | Config |
@@ -95,6 +125,10 @@ GROQ_MODEL=llama-3.3-70b-versatile   # optional, this is the default
 # QWEN_LOCAL_ENABLED=1
 # QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct
 
+# Optional observability (https://cloud.langfuse.com)
+# LANGFUSE_PUBLIC_KEY=pk-lf-...
+# LANGFUSE_SECRET_KEY=sk-lf-...
+# LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
 ### Run
@@ -197,7 +231,8 @@ ReqPal/
 │       ├── rag_service.py           # Chunking, embedding, ChromaDB retrieval
 │       ├── reranker_service.py      # Cross-encoder reranking (lazy-loaded, CPU)
 │       ├── llm_router.py            # Groq → Lightning → LitServe → Qwen → OpenAI → Ollama
-│       └── rag_llm_prompts.py       # All LLM prompt templates
+│       ├── rag_llm_prompts.py       # All LLM prompt templates
+│       └── observability.py         # Langfuse client singleton (no-op if keys not set)
 │
 └── static/
     ├── index.html                   # PM Dashboard (tabbed, responsive)
@@ -216,6 +251,7 @@ ReqPal/
 | Embeddings | `BAAI/bge-small-en-v1.5` (local, CPU) |
 | Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` (local, CPU, 22 MB) |
 | LLM | Groq / Lightning AI / Qwen (local) |
+| Observability | Langfuse (optional) |
 | Frontend | Vanilla JS, responsive, no build step |
 
 ---
