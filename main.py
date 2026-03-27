@@ -320,6 +320,38 @@ async def delete_document(document_id: int):
     return {"ok": True, "deleted_document_id": document_id}
 
 
+@app.patch("/documents/{document_id}/classification")
+async def update_document_classification(document_id: int, classification: str = Form(...)):
+    d = _doc_or_404(document_id)
+
+    try:
+        new_cls = DocumentClassification(classification)
+    except Exception:
+        raise HTTPException(400, f"Invalid classification: {classification}")
+
+    d.classification = new_cls
+    storage.update_document(d)
+
+    # Update ChromaDB metadata for all chunks of this document
+    try:
+        existing = rag_service.compliance_collection.get(
+            where={"document_id": int(document_id)}
+        )
+        if existing["ids"]:
+            updated_metadatas = [
+                {**md, "classification": classification}
+                for md in existing["metadatas"]
+            ]
+            rag_service.compliance_collection.update(
+                ids=existing["ids"],
+                metadatas=updated_metadatas,
+            )
+    except Exception as e:
+        print(f"Warning: ChromaDB classification update failed: {e}")
+
+    return {"ok": True, "document_id": document_id, "classification": classification}
+
+
 # ----------------------------
 # RAG: search (chunks)
 # ----------------------------

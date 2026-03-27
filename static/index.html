@@ -1063,9 +1063,15 @@
           <div class="result-top">
             <div>
               <p class="r-title">📄 ${escapeHtml(d.filename || "document")}</p>
-              <p class="r-meta">Type: ${escapeHtml(d.file_type)} • Class: ${escapeHtml(d.classification)} • Chunks: ${d.total_chunks || 0}</p>
+              <p class="r-meta">Type: ${escapeHtml(d.file_type)} • Chunks: ${d.total_chunks || 0}</p>
             </div>
             <div class="row">
+              <select style="font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--text)"
+                onchange="updateDocClassification(${d.id}, this.value)">
+                ${["regulation","process","evidence","discovery","decision","specification","legal","audit"].map(c =>
+                  `<option value="${c}" ${d.classification === c ? "selected" : ""}>${c}</option>`
+                ).join("")}
+              </select>
               <span class="score">${d.indexed ? "Indexed" : "Not indexed"}</span>
               <button class="btn btn-danger btn-small" onclick="confirmDeleteDocument(${d.id}, '${escapeHtml(d.filename || "document")}')">Delete</button>
             </div>
@@ -1073,6 +1079,14 @@
           <div class="code">${escapeHtml((d.document_purpose || (d.metadata && d.metadata.document_purpose) || "—"))}</div>
         </div>
       `).join("");
+    }
+
+    async function updateDocClassification(docId, cls){
+      const fd = new FormData();
+      fd.append("classification", cls);
+      const r = await fetch(`/documents/${docId}/classification`, { method:"PATCH", body: fd });
+      if(r.ok) toast("Classification updated");
+      else toast("Update failed");
     }
 
     // ---- RAG ----
