@@ -900,15 +900,23 @@
       const reqMap = {};
       reqs.forEach(r => { reqMap[r.id] = r.title; });
 
-      el.innerHTML = stories.map(s => `
+      const myId = dashboardData && dashboardData.stakeholder && dashboardData.stakeholder.id;
+
+      el.innerHTML = stories.map(s => {
+        const isOwn = s.stakeholder_id === myId;
+        const actions = isOwn
+          ? `<div class="row" style="flex-shrink:0">
+               <button class="btn btn-primary btn-small" style="background:var(--good)" onclick="acceptStory(${s.id})">Accept</button>
+               <button class="btn btn-ghost btn-small" onclick="editStoryInline(${s.id})">Edit</button>
+               <button class="btn btn-danger btn-small" onclick="rejectStory(${s.id})">Delete</button>
+             </div>`
+          : `<span class="pill" style="flex-shrink:0;color:var(--muted)">${escapeHtml(s.status || "pending")}</span>`;
+
+        return `
         <div class="req-item" id="story-card-${s.id}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <p class="req-title">${escapeHtml(s.title)}</p>
-            <div class="row" style="flex-shrink:0">
-              <button class="btn btn-primary btn-small" style="background:var(--good)" onclick="acceptStory(${s.id})">Accept</button>
-              <button class="btn btn-ghost btn-small" onclick="editStoryInline(${s.id})">Edit</button>
-              <button class="btn btn-danger btn-small" onclick="rejectStory(${s.id})">Reject</button>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <p class="req-title" style="margin:0">${escapeHtml(s.title)}</p>
+            ${actions}
           </div>
           <p class="req-desc">${escapeHtml(s.description)}</p>
           ${s.acceptance_criteria ? `<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(117,176,156,.06);border:1px solid rgba(117,176,156,.2);font-size:13px;line-height:1.5;white-space:pre-wrap"><b>Acceptance Criteria:</b>\n${escapeHtml(s.acceptance_criteria)}</div>` : ''}
@@ -917,8 +925,8 @@
             <span class="pill">${escapeHtml(s.priority)}</span>
             ${s.requirement_id && reqMap[s.requirement_id] ? `<span class="pill" style="color:var(--primary);border-color:rgba(58,68,93,.2)">From: ${escapeHtml(reqMap[s.requirement_id])}</span>` : ''}
           </div>
-        </div>
-      `).join("");
+        </div>`;
+      }).join("");
     }
 
     function renderAcceptedStories(stories){
@@ -933,19 +941,33 @@
       const reqMap = {};
       reqs.forEach(r => { reqMap[r.id] = r.title; });
 
-      el.innerHTML = stories.map(s => `
-        <div class="req-item">
-          <p class="req-title">${escapeHtml(s.title)}</p>
+      const myId = dashboardData && dashboardData.stakeholder && dashboardData.stakeholder.id;
+
+      el.innerHTML = stories.map(s => {
+        const isOwn = s.stakeholder_id === myId;
+        const actions = isOwn
+          ? `<div class="row" style="flex-shrink:0">
+               <button class="btn btn-ghost btn-small" onclick="editStoryInline(${s.id})">Edit</button>
+               <button class="btn btn-danger btn-small" onclick="rejectStory(${s.id})">Delete</button>
+             </div>`
+          : `<span class="pill" style="flex-shrink:0;color:var(--good);border-color:rgba(93,154,132,.3)">Accepted</span>`;
+
+        return `
+        <div class="req-item" id="story-card-${s.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <p class="req-title" style="margin:0">${escapeHtml(s.title)}</p>
+            ${actions}
+          </div>
           <p class="req-desc">${escapeHtml(s.description)}</p>
           ${s.acceptance_criteria ? `<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(117,176,156,.06);border:1px solid rgba(117,176,156,.2);font-size:13px;line-height:1.5;white-space:pre-wrap"><b>AC:</b> ${escapeHtml(s.acceptance_criteria)}</div>` : ''}
           <div class="row" style="margin-top:6px;flex-wrap:wrap">
             <span class="pill">${escapeHtml(s.category)}</span>
             <span class="pill">${escapeHtml(s.priority)}</span>
-            <span class="pill" style="color:var(--good);border-color:rgba(93,154,132,.3)">Accepted</span>
+            ${isOwn ? `<span class="pill" style="color:var(--good);border-color:rgba(93,154,132,.3)">Accepted</span>` : ''}
             ${s.requirement_id && reqMap[s.requirement_id] ? `<span class="pill">From: ${escapeHtml(reqMap[s.requirement_id])}</span>` : ''}
           </div>
-        </div>
-      `).join("");
+        </div>`;
+      }).join("");
     }
 
     function exportStories(format){
