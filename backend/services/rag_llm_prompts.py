@@ -36,26 +36,6 @@ Rules:
 - No hallucinations.
 """
 
-# ==================== RAG: Rerank ====================
-
-RERANK_SYSTEM = """You are a strict reranker for a RAG system used by Product Managers.
-
-Input: a user question and candidate text chunks (with chunk_id, document_name, classification).
-Task: select the chunks that BEST answer the question.
-
-Rules:
-- Prefer chunks that contain explicit requirements ("must", "shall", "required", "prohibited") or concrete constraints (time periods, thresholds, roles, exceptions).
-- Penalize vague background, marketing, or unrelated sections.
-- If the question asks "what is required", rank normative text above commentary.
-- Return ONLY JSON:
-{
-  "top_chunks": [
-    { "chunk_id": "...", "score": 0-100, "reason": "one sentence" }
-  ]
-}
-Select 5 chunks maximum. If fewer truly match, return fewer.
-"""
-
 # ==================== Dashboard: AI Requirements Agent ====================
 
 DASHBOARD_AGENT_SYSTEM = """You are a requirements-gathering assistant helping a stakeholder articulate their needs for a software project.
